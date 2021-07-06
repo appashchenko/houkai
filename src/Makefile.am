@@ -7,7 +7,7 @@ houkai_CFLAGS = -std=gnu99 \
 -Wall -Wextra \
 -Wpedantic -Wcast-align -Wcast-qual -Wconversion -Wenum-compare \
 -Wfloat-equal -Wredundant-decls -Wsign-conversion \
-@GTK_CFLAGS@
+$(GTK_CFLAGS)
 
-houkai_LDADD = @GTK_LIBS@
+houkai_LDADD = $(GTK_LIBS)
 CLEANFILES = *~
