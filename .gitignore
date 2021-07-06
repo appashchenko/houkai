@@ -1,8 +1,12 @@
 *.pck
+aclocal.m4
+autom4te.cache
 Makefile
+Makefile.in
 Makefile.am.user
 build-aux/*
 configure
 configure.log
 configure.status
-
+config.h.in
+config.h
