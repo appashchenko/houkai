@@ -1,0 +1,8 @@
+*.pck
+Makefile
+Makefile.am.user
+build-aux/*
+configure
+configure.log
+configure.status
+
