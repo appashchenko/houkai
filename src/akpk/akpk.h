@@ -55,92 +55,66 @@ use .start_block from sb, stm, externals
 #include <stdio.h>
 #include <stdlib.h>
 
-#define AKPK_BKHD "BKHD"
-#define AKPK_DATA "DATA"
-#define AKPK_RIFF "RIFF"
+#define MAGIC(a, b, c, d)                                                      \
+  ((uint32_t)a | ((uint32_t)b << 8) | ((uint32_t)c << 16) | ((uint32_t)d << 24))
+//#define AKPK_MAGIC MAGIC('A', 'K', 'P', 'K')
 
-#define AKPK_MAGIC                                                             \
-  ((uint32_t)'A' | ((uint32_t)'K' << 8) | ((uint32_t)'P' << 16) |              \
-   ((uint32_t)'K' << 24))
 
-struct akpk_file_header_t {
-  uint32_t magic;
-  uint32_t header_size;
-  uint32_t version;
-  uint32_t language_map_size;
-  uint32_t sound_banks_lut_size;
-  uint32_t stm_files_lut_size;
-  uint32_t externals_lut_size;
+enum SECTION {
+  AKPK = MAGIC('A', 'K', 'P', 'K'),
+  BKHD = MAGIC('B', 'K', 'H', 'D'),
+  HIRC = MAGIC('H', 'I', 'R', 'C'),
+  DIDX = MAGIC('D', 'I', 'D', 'X'),
+  DATA = MAGIC('D', 'A', 'T', 'A'),
+
+  RIFF = MAGIC('R', 'I', 'F', 'F')
 };
 
-struct file32_entry_t {
+struct akpk_header_t {
+  uint32_t magic;
+  uint32_t size;
+  uint32_t version;
+  uint32_t language_map_size;
+  uint32_t soundbanks_lut_size;
+  uint32_t stm_lut_size;
+  uint32_t externals_lut_size;
+};
+typedef struct akpk_header_t akpk_header_t;
+
+struct soundbank_entry32_t {
   uint32_t id;
   uint32_t block_size;
   uint32_t file_size;
   uint32_t start_block;
   uint32_t language_id;
 };
+typedef struct soundbank_entry32_t soundbank_entry32_t;
 
-struct file64_entry_t {
+struct soundbank_entry64_t {
   uint64_t id;
   uint32_t block_size;
   uint32_t file_size;
   uint32_t start_block;
   uint32_t language_id;
-} ;
+};
+typedef struct soundbank_entry64_t soundbank_entry64_t;
 
-struct string_entry_t {
+struct lang_entry_t {
   uint32_t offset;
   uint32_t id;
-} ;
+};
+typedef struct lang_entry_t lang_entry_t;
 
-struct lang_info_t {
+struct lang_t {
   uint32_t id;
   char* name;
-} ;
+} __attribute__((packed));
+typedef struct lang_t lang_t;
+typedef lang_t* lang_list_t;
 
-struct lang_map_t {
-  uint32_t count;
-  struct lang_info_t* languages;
-} ;
-
-struct soundbank_t {
-  uint32_t count;
-  struct file32_entry_t* files;
-} ;
-
-struct soundbank64_t {
-  uint32_t count;
-  struct file64_entry_t** files;
-} ;
-
-struct akpk_data_index_t {
-  char DIDX[4];
-  uint32_t size;
-  uint32_t hash;
-  uint32_t data_offset;
-  uint32_t data_size;
-  uint32_t _unknown1;
-  uint64_t _unknown2;
-};
-
-struct akpk_didx_data_info_t {
-  char DATA[4];
-  uint32_t size;
-};
-
-struct AKPK {
-  struct akpk_file_header_t header;
-  struct lang_map_t lang_map;
-  struct soundbank_t soundbanks;
-  struct soundbank_t smt;
-  struct soundbank64_t externals;
-  char * _filename;
-};
-
-struct AKPK* akpk_open(const char*);
-void akpk_close(struct AKPK*);
-void akpk_extract(struct AKPK*);
-uint8_t *akpk_get_file(struct AKPK* akpk, struct file32_entry_t* entry);
-
+void akpk_open(const char*);
+//void akpk_close(akpk_t*);
+//void akpk_extract(akpk_t*);
+//uint8_t* akpk_get_file(akpk_t* akpk, file32_entry_t* entry);
+//akpk_t* akpk_create(void);
 #endif // AKPK_H
