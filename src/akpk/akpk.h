@@ -57,27 +57,26 @@ use .start_block from sb, stm, externals
 
 #define MAGIC(a, b, c, d)                                                      \
   ((uint32_t)a | ((uint32_t)b << 8) | ((uint32_t)c << 16) | ((uint32_t)d << 24))
-//#define AKPK_MAGIC MAGIC('A', 'K', 'P', 'K')
 
 
 enum SECTION {
-  AKPK = MAGIC('A', 'K', 'P', 'K'),
-  BKHD = MAGIC('B', 'K', 'H', 'D'),
-  HIRC = MAGIC('H', 'I', 'R', 'C'),
-  DIDX = MAGIC('D', 'I', 'D', 'X'),
-  DATA = MAGIC('D', 'A', 'T', 'A'),
 
-  RIFF = MAGIC('R', 'I', 'F', 'F')
+  AKPK = 0x4B504B41,
+  BKHD = 0x44484B42,
+  HIRC = 0x43524948,
+  DIDX = 0x58444944,
+  DATA = 0x41544144,
+  RIFF = 0x46464952
 };
 
 struct akpk_header_t {
   uint32_t magic;
   uint32_t size;
   uint32_t version;
-  uint32_t language_map_size;
-  uint32_t soundbanks_lut_size;
+  uint32_t lang_map_size;
+  uint32_t sb_lut_size;
   uint32_t stm_lut_size;
-  uint32_t externals_lut_size;
+  uint32_t ext_lut_size;
 };
 typedef struct akpk_header_t akpk_header_t;
 

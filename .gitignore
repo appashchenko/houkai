@@ -6,6 +6,7 @@ Makefile.in
 Makefile.am.user
 Makefile.in.user
 build-aux/*
+build
 configure
 config.log
 config.status

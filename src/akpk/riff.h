@@ -15,10 +15,14 @@ struct riff_header_t {
     uint32_t average_bits_per_sample;
     uint16_t block_aligh;
     uint16_t bits_per_sample;
-    uint16_t extra_size;
-    uint32_t channel_layout;
+};
+
+struct riff_file_t {
+    struct riff_header_t header;
+    void* data;
 };
 
 typedef struct riff_header_t riff_header_t;
+typedef  struct riff_file_t riff_file_t;
 
 #endif

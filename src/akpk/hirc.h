@@ -1,4 +1,5 @@
 #include "akpk.h"
+#include <stdint.h>
 
 struct hirc_header_t {
   uint32_t magic;
@@ -7,19 +8,60 @@ struct hirc_header_t {
 };
 typedef struct hirc_header_t hirc_header_t;
 
-struct hirc_object_info_t {
+struct hirc_object_t {
   uint8_t type;
   uint32_t size;
-  uint32_t id;
 };
-typedef struct hirc_object_info_t hirc_object_info_t;
+typedef struct hirc_object_t hirc_object_t;
+
+enum include_type {
+    INCLUDED=0,
+    STREAMED=1,
+    PREFETCH=2
+};
+
+struct hirc_obj_act {
+    uint8_t type;
+    uint32_t size;
+    uint32_t offset;
+    uint32_t id;
+    uint8_t scope;
+    uint8_t action_type;
+    uint8_t unk1;
+};
+
+struct hirc_obj_snd {
+    uint8_t type;
+    uint32_t size;
+    uint32_t sfx_id;
+    uint32_t unknown1;
+    uint32_t include;
+    uint32_t audio_id;
+    uint32_t source_id;
+    // uint32_t offset;
+    // uint32_t size;
+};
+
+struct hirc_obj_mt {
+    uint8_t type;
+    uint32_t size;
+    uint32_t id;
+    uint32_t unk1;
+    uint32_t unk2;
+    uint8_t streamed;
+    uint32_t audio_id;
+    uint32_t raudio_id;
+};
+
+typedef struct hirc_obj_mt hirc_obj_mt;
+typedef struct hirc_obj_snd hirc_obj_snd;
 
 enum HIRC_OBJECT {
   HIRC_SETTINGS = 1,
   HIRC_SOUND = 2,
   HIRC_EVENT_ACTION = 3,
   HIRC_ACTION = 4,
-  HIRC_CONTAINER = 5,
+  HIRC_SEQUENCE_CONTAINER = 5,
   HIRC_SWITCH_CONTAINER = 6,
   HIRC_ACTOR_MIXER = 7,
   HIRC_AUDIO_BUS = 8,
