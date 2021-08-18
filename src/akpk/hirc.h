@@ -1,14 +1,14 @@
 #include "akpk.h"
 #include <stdint.h>
 
-struct hirc_header_t {
+struct __attribute__((packed)) hirc_header_t {
   uint32_t magic;
   uint32_t size;
   uint32_t count;
 };
 typedef struct hirc_header_t hirc_header_t;
 
-struct hirc_object_t {
+struct __attribute__((packed)) hirc_object_t {
   uint8_t type;
   uint32_t size;
 };
@@ -20,7 +20,7 @@ enum include_type {
     PREFETCH=2
 };
 
-struct hirc_obj_act {
+struct __attribute__((packed)) hirc_obj_act {
     uint8_t type;
     uint32_t size;
     uint32_t offset;
@@ -30,7 +30,7 @@ struct hirc_obj_act {
     uint8_t unk1;
 };
 
-struct hirc_obj_snd {
+struct __attribute__((packed)) hirc_obj_snd {
     uint8_t type;
     uint32_t size;
     uint32_t sfx_id;
@@ -42,7 +42,7 @@ struct hirc_obj_snd {
     // uint32_t size;
 };
 
-struct hirc_obj_mt {
+struct __attribute__((packed)) hirc_obj_mt {
     uint8_t type;
     uint32_t size;
     uint32_t id;
