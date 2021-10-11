@@ -12,49 +12,55 @@ struct __attribute__((packed)) hirc_object_t {
   uint8_t type;
   uint32_t size;
 };
-typedef struct hirc_object_t hirc_object_t;
 
-enum include_type {
-    INCLUDED=0,
-    STREAMED=1,
-    PREFETCH=2
-};
+enum include_type { INCLUDED = 0, STREAMED = 1, PREFETCH = 2 };
 
 struct __attribute__((packed)) hirc_obj_act {
-    uint8_t type;
-    uint32_t size;
-    uint32_t offset;
-    uint32_t id;
-    uint8_t scope;
-    uint8_t action_type;
-    uint8_t unk1;
+  uint8_t type;
+  uint32_t size;
+  uint32_t offset;
+  uint32_t id;
+  uint8_t scope;
+  uint8_t action_type;
+  uint8_t unk1;
 };
 
 struct __attribute__((packed)) hirc_obj_snd {
-    uint8_t type;
-    uint32_t size;
-    uint32_t sfx_id;
-    uint32_t unknown1;
-    uint32_t include;
-    uint32_t audio_id;
-    uint32_t source_id;
-    // uint32_t offset;
-    // uint32_t size;
+  uint8_t type;
+  uint32_t size;
+  uint32_t sfx_id;
+  uint32_t group_id;
+  uint32_t include;
+  uint32_t audio_id;
+  uint32_t source_id;
+  // uint32_t offset;
+  // uint32_t size;
 };
 
 struct __attribute__((packed)) hirc_obj_mt {
-    uint8_t type;
-    uint32_t size;
-    uint32_t id;
-    uint32_t unk1;
-    uint32_t unk2;
-    uint8_t streamed;
-    uint32_t audio_id;
-    uint32_t raudio_id;
+  uint8_t type;
+  uint32_t size;
+  uint32_t id;
+  uint32_t unk1;
+  uint32_t unk2;
+  uint8_t streamed;
+  uint32_t audio_id;
+  uint32_t raudio_id;
 };
 
+struct __attribute__((packed)) hirc_obj_mfx {
+  uint8_t type;
+  uint32_t size;
+  uint32_t id;
+  uint32_t group1;
+  uint32_t group2;
+  uint32_t group3;
+};
+
+typedef struct hirc_object_t hirc_object_t;
 typedef struct hirc_obj_mt hirc_obj_mt;
 typedef struct hirc_obj_snd hirc_obj_snd;
+typedef struct hirc_obj_mfx hirc_obj_mfx;
 
 enum HIRC_OBJECT {
   HIRC_SETTINGS = 1,
@@ -77,3 +83,5 @@ enum HIRC_OBJECT {
   HIRC_EFFECT = 18,
   HIRC_AUXILIARY_BUS = 20
 };
+
+// # vim: ts=2 sw=2 expandtab

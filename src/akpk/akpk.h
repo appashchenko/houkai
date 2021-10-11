@@ -55,9 +55,6 @@ use .start_block from sb, stm, externals
 #include <stdio.h>
 #include <stdlib.h>
 
-#define MAGIC(a, b, c, d)                                                      \
-  ((uint32_t)a | ((uint32_t)b << 8) | ((uint32_t)c << 16) | ((uint32_t)d << 24))
-
 
 enum SECTION {
 
@@ -106,14 +103,12 @@ typedef struct lang_entry_t lang_entry_t;
 
 struct lang_t {
   uint32_t id;
-  char* name;
+  char *name;
 } __attribute__((packed));
 typedef struct lang_t lang_t;
-typedef lang_t* lang_list_t;
+typedef lang_t *lang_list_t;
 
-void akpk_open(const char*);
-//void akpk_close(akpk_t*);
-//void akpk_extract(akpk_t*);
-//uint8_t* akpk_get_file(akpk_t* akpk, file32_entry_t* entry);
-//akpk_t* akpk_create(void);
+void akpk_open(const char *);
 #endif // AKPK_H
+
+// # vim: ts=2 sw=2 expandtab

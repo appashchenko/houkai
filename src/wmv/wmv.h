@@ -29,6 +29,6 @@ struct unityfs_header_t {
   uint8_t flags[4];
 };
 
-int wmv_readHeader(FILE*, struct unityfs_header_t*);
+int wmv_readHeader(FILE *, struct unityfs_header_t *);
 
 #endif // WMV_H

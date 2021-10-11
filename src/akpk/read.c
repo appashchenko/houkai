@@ -22,25 +22,27 @@
 #include <threads.h>
 #include <unistd.h>
 
+#define VERBOSE 1
+
+char extr_path[256] = {0};
 
 // static sem_t limiter;
 static lang_list_t languages = NULL;
-static char cur_path[128] = {0};
 static int stream_fd = 0;
 
-static char* get_language_str(uint32_t id);
-static void read_bkhd(void* data);
-static void read_didx(void* data);
-static void read_hirc(void* data);
+// static char *get_language_str(uint32_t id);
+static void read_bkhd(void *data);
+static void read_didx(void *data);
+static void read_hirc(void *data);
 static int read_soundbank(uint64_t id, size_t sz, uint32_t len, uint32_t off);
 
-void akpk_open(const char* filename) {
+void akpk_open(const char *filename) {
   struct stat sb;
-  void* header_data = NULL;
-  void* header_data_ptr = NULL;
+  void *header_data = NULL;
+  void *header_data_ptr = NULL;
   akpk_header_t header;
   // const int cpu_count = get_nprocs();
-  uint8_t* filedata = NULL;
+  uint8_t *filedata = NULL;
 
   if ((stream_fd = open(filename, O_RDONLY, O_NOFOLLOW)) == 0) {
     fprintf(stderr, "Failed to open file %s. Exit\n", filename);
@@ -52,7 +54,9 @@ void akpk_open(const char* filename) {
     goto clean;
   }
 
+#ifdef VERBOSE
   printf("File size %lu bytes.\n", sb.st_size);
+#endif
 
   if (read(stream_fd, &header, sizeof(header)) != sizeof(header)) {
     fprintf(stderr, "Failed to read file header. Exit\n");
@@ -85,46 +89,45 @@ void akpk_open(const char* filename) {
 
   // Read the languages map
   {
-    uint32_t count = *((uint32_t*)header_data_ptr);
+    uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
       languages = (lang_list_t)calloc(count + 1, sizeof(lang_t));
-      lang_entry_t* lang_map =
-          (lang_entry_t*)((uintptr_t)header_data_ptr + sizeof(count));
+      lang_entry_t *lang_map =
+          (lang_entry_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
-        languages[i].name = (char*)header_data_ptr + lang_map[i].offset;
-        /* printf("* LANGUAGE: %u,%s\n", languages[i].id, languages[i].name);*/
+        languages[i].name = (char *)header_data_ptr + lang_map[i].offset;
+#ifdef VERBOSE
+        printf("* LANGUAGE: %u,%s\n", languages[i].id, languages[i].name);
+#endif
       }
       languages[count].id = 0;
       languages[count].name = NULL;
     }
 
     header_data_ptr =
-        (void*)((uintptr_t)header_data_ptr + header.lang_map_size);
+        (void *)((uintptr_t)header_data_ptr + header.lang_map_size);
   }
 
-  // All seems OK, unpacking
-  //  strcat(sbdir, basename(filename));
-  //  strcat(sbdir, ".extracted");
+  sprintf(extr_path, "%s.extracted", filename);
 
-  //  int ret =
-  //      mkdir(sbdir, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH |
-  //      S_IROTH);
-  //  if (ret != 0 && errno != EEXIST) {
-  //    char* error = strerror(ret);
-  //    fprintf(stderr, "Failed to create directory %s\n%s\n", sbdir, error);
-  //    goto clean;
-  //  }
+  int ret = mkdir(extr_path,
+                  S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
+  if (ret != 0 && errno != EEXIST) {
+    char *error = strerror(ret);
+    fprintf(stderr, "Failed to create directory %s\n%s\n", extr_path, error);
+    goto clean;
+  }
 
   // Read soundbanks
   {
-    uint32_t count = *((uint32_t*)header_data_ptr);
+    uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry32_t* sb =
-          (soundbank_entry32_t*)((uintptr_t)header_data_ptr + sizeof(count));
+      soundbank_entry32_t *sb =
+          (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       /*if (count >= (uint32_t)cpu_count) {
         sem_init(&limiter, 0, (unsigned int)cpu_count);
@@ -137,9 +140,11 @@ void akpk_open(const char* filename) {
       }*/
 
       for (uint32_t i = 0; i < count; i++) {
-        /* printf("* SB32 SOUNDBANK#%u size=%lu language=%u \n", sb[i].id,
+#ifdef VERBOSE
+        printf("* SB32 SOUNDBANK#%X size=%lu language=%u \n", sb[i].id,
                (uint64_t)sb[i].block_size * (uint64_t)sb[i].file_size,
-               sb[i].language_id);*/
+               sb[i].language_id);
+#endif
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
                            sb[i].start_block, sb[i].language_id) < 0) {
           goto clean;
@@ -147,43 +152,46 @@ void akpk_open(const char* filename) {
       }
     }
 
-    header_data_ptr = (void*)((uintptr_t)header_data_ptr + header.sb_lut_size);
+    header_data_ptr = (void *)((uintptr_t)header_data_ptr + header.sb_lut_size);
   }
 
   // Read STM soundbanks
   {
-    uint32_t count = *((uint32_t*)header_data_ptr);
+    uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry32_t* sb =
-          (soundbank_entry32_t*)((uintptr_t)header_data_ptr + sizeof(count));
+      soundbank_entry32_t *sb =
+          (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
-        /* printf("* STM SOUNDBANK#%u size=%lu language=%u \n", sb[i].id,
+#ifdef VERBOSE
+        printf("* STM SOUNDBANK#%X size=%lu language=%u \n", sb[i].id,
                (uint64_t)sb[i].block_size * (uint64_t)sb[i].file_size,
-               sb[i].language_id);*/
-
+               sb[i].language_id);
+#endif
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
                            sb[i].start_block, sb[i].language_id) < 0) {
           goto clean;
         }
       }
     }
-    header_data_ptr = (void*)((uintptr_t)header_data_ptr + header.stm_lut_size);
+    header_data_ptr =
+        (void *)((uintptr_t)header_data_ptr + header.stm_lut_size);
   }
 
   // Read EXTERNALS
   {
-    uint32_t count = *((uint32_t*)header_data_ptr);
+    uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry64_t* sb =
-          (soundbank_entry64_t*)((uintptr_t)header_data_ptr + sizeof(count));
+      soundbank_entry64_t *sb =
+          (soundbank_entry64_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
-        /* printf("* EXTERNALS#%lu size=%u language=%u \n", sb[i].id,
-               sb[i].block_size * sb[i].file_size, sb[i].language_id);*/
-
+#ifdef VERBOSE
+        printf("* EXTERNALS#%lX size=%u language=%u \n", sb[i].id,
+               sb[i].block_size * sb[i].file_size, sb[i].language_id);
+#endif
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
                            sb[i].start_block, sb[i].language_id) < 0) {
           goto clean;
@@ -213,38 +221,40 @@ clean:
 
 static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
                           uint32_t lang_id) {
-  void* data = malloc(size);
+  void *data = malloc(size);
 
   if (pread(stream_fd, data, size, offset) == (ssize_t)size) {
-    uint32_t magic = *((uint32_t*)data);
+    uint32_t magic = *((uint32_t *)data);
     switch (magic) {
-      case BKHD:
-        // printf("%s\n", "*** BKHD");
-        read_bkhd(data);
-        break;
-      case RIFF: {
-        // printf("%s\n", "***  RIFF");
-        break;
+    case BKHD:
+      read_bkhd(data);
+      break;
+    case RIFF: {
+#ifdef VERBOSE
+      printf("%s#%lX\n", "***  SBRIFF", id);
+#endif
+      riff_header_t *rh = (riff_header_t *)data;
+      char out_name[128] = {0};
+      int out;
+      size_t ret;
 
-        /*riff_header_t* rh = (riff_header_t*)data;
+      if (snprintf(out_name, 127, "%s/%lX.wem", extr_path, id) > 0) {
 
-        if (snprintf(out_name, 127, "%s/%lu.wem", cur_path, id) > 0) {
-          out = fopen(out_name, "wb");
+        out = open(out_name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
-          if (out) {
-            printf("Save raw RIFF %u bytes to %s\n", rh->size, out_name);
-            size_t ret = fwrite(data, rh->size, 1, out);
-            if (ret != 1) {
-              perror("Failed to write RIFF to file");
-            }
-            fclose(out);
-          } else {
-            perror("Failed to open file to save raw RIFF");
+        if (out) {
+          ret = write(out, data, rh->size);
+          if (ret != rh->size) {
+            perror("Failed to write RIFF to file");
           }
-        }*/
-      } break;
-      default:
-        fprintf(stderr, "Unknown soundbank container type: %X\n", magic);
+          close(out);
+        } else {
+          perror("Failed to open file to save raw RIFF");
+        }
+      }
+    } break;
+    default:
+      fprintf(stderr, "Unknown soundbank container type: %X\n", magic);
     }
   } else {
     fprintf(stderr, "Failed to read file. Exit.\n");
@@ -254,114 +264,98 @@ static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
   return 0;
 }
 
-static void read_didx(void* data) {
-  return;
+static void read_didx(void *data) {
+  char filename[128] = {0};
 
-  FILE* out = NULL;
-  char filename[256] = {0};
-  struct stat info;
+  didx_header_t *header = (didx_header_t *)data;
 
-  didx_header_t* header = (didx_header_t*)data;
+  didx_entry_t *entry =
+      (didx_entry_t *)((uintptr_t)data + sizeof(didx_header_t));
 
-  didx_entry_t* entry =
-      (didx_entry_t*)((uintptr_t)data + sizeof(didx_header_t));
+  didx_entry_t *data_header =
+      (didx_entry_t *)((uintptr_t)entry + header->enties_size);
 
-  didx_entry_t* data_header =
-      (didx_entry_t*)((uintptr_t)entry + header->enties_size);
-  void* data_start = (void*)((uintptr_t)data_header + sizeof(didx_data_t));
+  void *data_start = (void *)((uintptr_t)data_header + sizeof(didx_data_t));
 
   for (; entry < data_header; entry++) {
-    int ret = stat(filename, &info);
 
-    if (ret == 0) continue;
-
-    // printf("*   WEM#%X (%u bytes)\n", entry->wem_id, entry->size);
-    if (sprintf(filename, "%s/%X.wem", cur_path, entry->wem_id) < 0) {
+#ifdef VERBOSE
+    printf("*   WEM#%X (%u bytes)\n", entry->wem_id, entry->size);
+#endif
+    if (snprintf(filename, 127, "%s/%X.wem", extr_path, entry->wem_id) < 0) {
+      perror("didx failed");
       return;
     }
 
-    out = fopen(filename, "wb");
-
-    if (out) {
-      void* wem = (void*)((uintptr_t)data_start + entry->data_offset);
-      fwrite(wem, entry->size, 1, out);
-      fclose(out);
-    } else {
-      perror("Failed to write WEM to file");
-      continue;
-    }
+    void *wem = (void *)((uintptr_t)data_start + entry->data_offset);
+    wem2wav(wem, entry->size);
   }
 }
 
-static void read_hirc(void* data) {
-  hirc_header_t* header = (hirc_header_t*)data;
+static void read_hirc(void *data) {
+  hirc_header_t *header = (hirc_header_t *)data;
 
-  data = (void*)((uintptr_t)data + sizeof(hirc_header_t));
+  data = (void *)((uintptr_t)data + sizeof(hirc_header_t));
 
   for (uint32_t i = 0; i < header->count; i++) {
-    hirc_object_t* object = (hirc_object_t*)data;
-
-    printf("HIRC size %u bytes.\n", object->size);
+    hirc_object_t *object = (hirc_object_t *)data;
 
     switch (object->type) {
-      case HIRC_SOUND: {
-        hirc_obj_snd* sound = (hirc_obj_snd*)data;
+    case HIRC_SOUND: {
+      hirc_obj_snd *sound = (hirc_obj_snd *)data;
 
-        int out = open("sound.hirc", O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-        if (out) {
-          write(out, sound, sound->size);
-          close(out);
-          return;
-        } else {
-          perror("Failed to write HIRC");
-          return;
-        }
+#ifdef VERBOSE
+      printf(">>>>HIRC-SOUND#%X PARENT#%X\n", sound->audio_id, sound->group_id);
+#endif
+    } break;
+    case HIRC_MUSIC_TRACK: {
+      hirc_obj_mt *track = (hirc_obj_mt *)data;
 
-        printf(">>>HIRC#%X %u bytes\n", sound->sfx_id, sound->size);
-      } break;
-      case HIRC_MUSIC_TRACK: {
-        hirc_obj_mt* track = (hirc_obj_mt*)data;
+#ifdef VERBOSE
+      printf(">>>>HIRC-MUSICTRCK#%X\n", track->id);
+#endif
+    } break;
+    case HIRC_MOTION_FX: {
+      hirc_obj_mfx *mfx = (hirc_obj_mfx *)data;
 
-        int out = open("track.hirc", O_CREAT | O_WRONLY, S_IWUSR | S_IRUSR);
-        if (out) {
-          write(out, track, track->size);
-          close(out);
-          return;
-        } else {
-          perror("Failed to write HIRC");
-          return;
-        }
-        printf("HIRC MUSIC TRACK #%u\n", track->id);
-      } break;
-      default:
-        fprintf(stderr, "HIRC object type %u is not supported yet. Skip\n",
-                object->type);
-        break;
+#ifdef VERBOSE
+      printf(">>>>HIRC MFX#%X\n", mfx->id);
+#endif
+    } break;
+    default:
+#ifdef VERBOSE
+      fprintf(stderr, "HIRC object type %u is not supported yet. Skip\n",
+              object->type);
+#endif
+      break;
     }
 
-    printf("HIRC object type=%u\n", object->type);
-    data = (void*)((uintptr_t)data + object->size + sizeof(hirc_object_t));
+    data = (void *)((uintptr_t)data + object->size + sizeof(hirc_object_t));
   }
 }
 
-static void read_bkhd(void* data) {
-  bank_header_t* header = (bank_header_t*)data;
+static void read_bkhd(void *data) {
+  bank_header_t *header = (bank_header_t *)data;
 
-  printf("*  DIDX#%u from %u\n", header->bank_id, header->soundbank_id);
-  data = (void*)((uintptr_t)data + sizeof(header->magic) +
-                 sizeof(header->size) + header->size);
+#ifdef VERBOSE
+  printf("*  BKHD#%X from %X\n", header->bank_id, header->soundbank_id);
+#endif
+  data = (void *)((uintptr_t)data + sizeof(header->magic) +
+                  sizeof(header->size) + header->size);
 
-  uint32_t section_magic = *((uint32_t*)data);
+  uint32_t section_magic = *((uint32_t *)data);
 
   switch (section_magic) {
-    case DIDX:
-      read_didx(data);
-      break;
-    case HIRC:
-      read_hirc(data);
-      break;
-    default:
-      fprintf(stderr, "!!!! Unknown BKHD section %u\n", section_magic);
+  case DIDX:
+    puts("*   DIDX\n");
+    read_didx(data);
+    break;
+  case HIRC:
+    puts("*   HIRC\n");
+    read_hirc(data);
+    break;
+  default:
+    fprintf(stderr, "!!!! Unknown BKHD section %u\n", section_magic);
   }
 }
 

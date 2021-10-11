@@ -1,3 +1,0 @@
-SUBDIRS = src tests
-EXTRA_DIST = HACKING
-CLEANFILES = *~

@@ -20,8 +20,5 @@ subdir('tests')
 executable(
   'houkai',
   sources,
-  dependencies: [
-    dependency('gtk4')
-  ],
   install: false
 )

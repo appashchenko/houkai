@@ -1,7 +1,9 @@
 #include "akpk/akpk.h"
 #include <stdio.h>
 
-int main(int argv, char* argc[]) {
+#define DEBUG
+
+int main(int argv, char *argc[]) {
   if (argv > 1) {
     akpk_open(argc[1]);
   } else {
