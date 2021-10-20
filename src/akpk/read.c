@@ -1,6 +1,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <stdlib.h>
 #define _GNU_SOURCE
 #include "akpk.h"
 #include "bkhd.h"
@@ -13,7 +14,6 @@
 #include <fcntl.h>
 #include <memory.h>
 #include <semaphore.h>
-#include <sndfile.h>
 #include <stddef.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -35,6 +35,7 @@ static void read_bkhd(void *data);
 static void read_didx(void *data);
 static void read_hirc(void *data);
 static int read_soundbank(uint64_t id, size_t sz, uint32_t len, uint32_t off);
+static void save_wem(void *data, size_t size, uint64_t id);
 
 void akpk_open(const char *filename) {
   struct stat sb;
@@ -227,31 +228,12 @@ static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
     uint32_t magic = *((uint32_t *)data);
     switch (magic) {
     case BKHD:
+      puts("*  BKHD");
       read_bkhd(data);
       break;
     case RIFF: {
-#ifdef VERBOSE
-      printf("%s#%lX\n", "***  SBRIFF", id);
-#endif
-      riff_header_t *rh = (riff_header_t *)data;
-      char out_name[128] = {0};
-      int out;
-      size_t ret;
-
-      if (snprintf(out_name, 127, "%s/%lX.wem", extr_path, id) > 0) {
-
-        out = open(out_name, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-
-        if (out) {
-          ret = write(out, data, rh->size);
-          if (ret != rh->size) {
-            perror("Failed to write RIFF to file");
-          }
-          close(out);
-        } else {
-          perror("Failed to open file to save raw RIFF");
-        }
-      }
+      puts("*  RIFF");
+      save_wem(data, size, id);
     } break;
     default:
       fprintf(stderr, "Unknown soundbank container type: %X\n", magic);
@@ -288,7 +270,7 @@ static void read_didx(void *data) {
     }
 
     void *wem = (void *)((uintptr_t)data_start + entry->data_offset);
-    wem2wav(wem, entry->size);
+    save_wem(wem, entry->size, entry->wem_id);
   }
 }
 
@@ -356,6 +338,25 @@ static void read_bkhd(void *data) {
     break;
   default:
     fprintf(stderr, "!!!! Unknown BKHD section %u\n", section_magic);
+  }
+}
+
+void save_wem(void *data, size_t size, uint64_t id) {
+  char filename[21] = {0};
+  int out;
+
+  snprintf(filename, 20, "%lX.wem", id);
+
+  out = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
+
+  if (out) {
+    uint64_t ret = write(out, data, size);
+
+    if (ret != size) {
+      char *err_str = strerror(errno);
+      printf("Failed to save %s: %s\n", filename, err_str);
+    }
+    close(out);
   }
 }
 
