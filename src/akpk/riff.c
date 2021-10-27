@@ -1,3 +1,6 @@
+#ifndef RIFF_H
+#define RIFF_H
+
 #include "riff.h"
 
 #include "akpk.h"
@@ -42,5 +45,6 @@ int wem2wav(void* data) {
 
   return 0;
 }
+#endif
 
 // # vim: ts=2 sw=2 expandtab

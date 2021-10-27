@@ -15,7 +15,6 @@ struct audio_header_t {
 typedef struct riff_header_t riff_header_t;
 
 int wem2wav(void *data);
-
 #endif
 
 // # vim: ts=2 sw=2 expandtab

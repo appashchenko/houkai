@@ -1,6 +1,9 @@
 #include "akpk.h"
 #include <stdint.h>
 
+#ifndef HIRC_H
+#define HIRC_H
+
 struct __attribute__((packed)) hirc_header_t {
   uint32_t magic;
   uint32_t size;
@@ -83,5 +86,8 @@ enum HIRC_OBJECT {
   HIRC_EFFECT = 18,
   HIRC_AUXILIARY_BUS = 20
 };
+
+void read_hirc(void *data);
+#endif
 
 // # vim: ts=2 sw=2 expandtab

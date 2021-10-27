@@ -1,17 +1,16 @@
 #include "akpk/akpk.h"
-#include <stdio.h>
-#include <unistd.h>
 #include <getopt.h>
 #include <stdbool.h>
+#include <stdio.h>
+#include <unistd.h>
 
 #define DEBUG
 
-enum { NORMAL, ANALYZE } mode = NORMAL;
-
-
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
   if (argc > 1) {
-    akpk_open(argv[1]);
+    for (int i = 1; i < argc; i++) {
+      akpk_open(argv[i]);
+    }
   } else {
     printf("Usage: houkai <file.pck>\n");
   }

@@ -16,9 +16,3 @@ project(
 
 subdir('src')
 subdir('tests')
-
-executable(
-  'houkai',
-  sources,
-  install: false
-)
