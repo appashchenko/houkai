@@ -54,6 +54,7 @@ use .start_block from sb, stm, externals
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <uchar.h>
 
 #define E_AVATAR_FOOTSTEP_LEFT 78C82F4B
 #define E_AVATAR_FOOTSTEP_RIGHT 69413D48

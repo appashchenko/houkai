@@ -14,6 +14,7 @@ struct audio_header_t {
 
 typedef struct riff_header_t riff_header_t;
 
+void save_wem(void *data, size_t size, uint64_t id, char *path);
 int wem2wav(void *data);
 #endif
 

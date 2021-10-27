@@ -3,7 +3,7 @@ sources = files(
   'akpk/read.c',
   'akpk/bkhd.c',
   'akpk/didx.c',
-  'akpk/hirc.c'
+  'akpk/riff.c'
 )
 
 executable(

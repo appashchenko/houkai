@@ -1,5 +1,5 @@
-#include <stddef.h>
 #include <linux/limits.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -7,12 +7,12 @@
 #include "akpk.h"
 #include "bkhd.h"
 #include "didx.h"
-#include "hirc.h"
 #include "riff.h"
 #include "sys/sysinfo.h"
 #include <assert.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <memory.h>
 #include <semaphore.h>
 #include <stddef.h>
@@ -21,21 +21,14 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <threads.h>
+#include <uchar.h>
 #include <unistd.h>
-#include <limits.h>
 
-#define VERBOSE 1
-
-char extr_path[256] = {0};
-
-// static sem_t limiter;
-static lang_list_t languages = NULL;
 static int stream_fd = 0;
-
-static char *get_language_str(uint32_t id);
-static int read_soundbank(uint64_t id, size_t sz, uint32_t len, uint32_t off);
-static void save_wem(void *data, size_t size, uint64_t id);
-static char* basename(const char* filepath, char* path);
+static char *get_language_str(lang_list_t languages, uint32_t id);
+static int read_soundbank(uint64_t id, size_t sz, uint32_t len, char *path);
+static char *basename(const char *filepath);
+static char *read16to8(char16_t *string);
 
 void akpk_open(const char *filepath) {
   struct stat sb;
@@ -43,7 +36,10 @@ void akpk_open(const char *filepath) {
   void *header_data_ptr = NULL;
   akpk_header_t header;
   uint8_t *filedata = NULL;
-  char base[PATH_MAX];
+  char *base = NULL;
+  lang_list_t languages = NULL;
+  char *path = NULL;
+  unsigned long base_len;
 
   if ((stream_fd = open(filepath, O_RDONLY, O_NOFOLLOW)) == 0) {
     fprintf(stderr, "Failed to open file %s. Exit\n", filepath);
@@ -71,14 +67,16 @@ void akpk_open(const char *filepath) {
     goto clean;
   }
 
-  basename(filepath, base);
-  int ret = mkdir(base,
-                  S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
+  base = basename(filepath);
+  int ret =
+      mkdir(base, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
   if (ret != 0 && errno != EEXIST) {
     char *error = strerror(ret);
-    fprintf(stderr, "Failed to create directory %s\n%s\n", extr_path, error);
+    fprintf(stderr, "Failed to create directory %s\n%s\n", base, error);
     goto clean;
   }
+
+  base_len = strlen(base);
 
   // Read remaining header data (languages map, soundbanks look-up tables)
   {
@@ -104,15 +102,29 @@ void akpk_open(const char *filepath) {
 
       for (uint32_t i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
-        languages[i].name = (char *)header_data_ptr + lang_map[i].offset;
-#ifdef VERBOSE
-        printf("* LANGUAGE: %u,%s\n", languages[i].id, languages[i].name);
-#endif
+        char *test = (char *)((uintptr_t)header_data_ptr + lang_map[i].offset);
+        char *test2 =
+            (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset);
+        languages[i].name = read16to8(
+            (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset));
+
+        unsigned long total_len = base_len + strlen(languages[i].name) + 1 + 1;
+
+        path = (char *)malloc(total_len);
+        snprintf(path, total_len, "%s/%s", base, languages[i].name);
+
+        int ret = mkdir(path, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH |
+                                  S_IROTH);
+        if (ret != 0 && errno != EEXIST) {
+          char *error = strerror(ret);
+          fprintf(stderr, "Failed to create directory %s\n%s\n", path, error);
+          goto clean;
+        }
+        free(path);
       }
       languages[count].id = 0;
       languages[count].name = NULL;
     }
-
     header_data_ptr =
         (void *)((uintptr_t)header_data_ptr + header.lang_map_size);
   }
@@ -126,13 +138,20 @@ void akpk_open(const char *filepath) {
           (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
+        char *lang = get_language_str(languages, sb[i].language_id);
+        unsigned long total_len = base_len + strlen(lang) + 1 + 1;
+
+        path = malloc(total_len);
+        snprintf(path, total_len, "%s/%s", base, lang);
+
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
-                           sb[i].start_block, sb[i].language_id) < 0) {
+                           sb[i].start_block, path) < 0) {
+          free(path);
           goto clean;
         }
+        free(path);
       }
     }
-
     header_data_ptr = (void *)((uintptr_t)header_data_ptr + header.sb_lut_size);
   }
 
@@ -145,10 +164,18 @@ void akpk_open(const char *filepath) {
           (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
+        char *lang = get_language_str(languages, sb[i].language_id);
+        unsigned long total_len = base_len + strlen(lang) + 1 + 1;
+
+        path = malloc(total_len);
+        snprintf(path, total_len, "%s/%s", base, lang);
+
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
-                           sb[i].start_block, sb[i].language_id) < 0) {
+                           sb[i].start_block, path) < 0) {
+          free(path);
           goto clean;
         }
+        free(path);
       }
     }
     header_data_ptr =
@@ -164,10 +191,18 @@ void akpk_open(const char *filepath) {
           (soundbank_entry64_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (uint32_t i = 0; i < count; i++) {
+        char *lang = get_language_str(languages, sb[i].language_id);
+        unsigned long total_len = base_len + strlen(lang) + 1 + 1;
+
+        path = malloc(total_len);
+        snprintf(path, total_len, "%s/%s", base, lang);
+
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
-                           sb[i].start_block, sb[i].language_id) < 0) {
+                           sb[i].start_block, path) < 0) {
+          free(path);
           goto clean;
         }
+        free(path);
       }
     }
   }
@@ -180,11 +215,20 @@ clean:
     free(filedata);
   }
 
+  if (languages) {
+    lang_t *lang = languages;
+    while (lang->name != NULL) {
+      free(lang->name);
+      lang++;
+    }
+    free(languages);
+  }
+
+  if (base) {
+    free(base);
+  }
   if (header_data) {
     free(header_data);
-  }
-  if (languages != NULL) {
-    free(languages);
   }
   if (stream_fd) {
     close(stream_fd);
@@ -192,18 +236,14 @@ clean:
 }
 
 static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
-                          uint32_t lang_id) {
+                          char *path) {
   void *data = malloc(size);
-
-  char path[PATH_MAX];
-
-  snprintf(path, PATH_MAX, "%s/%s", base, get_language_str(lang_id));
 
   if (pread(stream_fd, data, size, offset) == (ssize_t)size) {
     uint32_t magic = *((uint32_t *)data);
     switch (magic) {
     case BKHD:
-      read_bkhd(data path);
+      read_bkhd(data, path);
       break;
     case RIFF: {
       save_wem(data, size, id, path);
@@ -219,56 +259,29 @@ static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
   return 0;
 }
 
+char *get_language_str(lang_list_t languages, uint32_t id) {
+  static char *none = "";
+  char *ret = none;
 
-void save_wem(void *data, size_t size, uint64_t id) {
-  char filename[21] = {0};
-  int out;
-
-  snprintf(filename, 20, "%lX.wem", id);
-
-  out = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
-
-  if (out) {
-    uint64_t ret = write(out, data, size);
-
-    if (ret != size) {
-      char *err_str = strerror(errno);
-      printf("Failed to save %s: %s\n", filename, err_str);
-    }
-    close(out);
-  }
-}
-
-char* get_language_str(uint32_t id) {
-  static char* none = "";
-  char* ret = none;
-
-  lang_list_t list = languages;
-  while (list->name != NULL) {
-    if (list->id == id) {
-      ret = list->name;
+  lang_list_t p = languages;
+  while (p->name != NULL) {
+    if (p->id == id) {
+      ret = p->name;
       break;
     }
-    list++;
+    p++;
   }
 
   return ret;
 }
 
+char *basename(const char *filepath) {
+  char *filebasename;
+  char *p = (char *)filepath;
+  char *filename = (char *)filepath;
+  unsigned long len = 0;
 
-char * basename(const char* filepath, char* path) {
-  char * filebasename;
-  char * p = (char*)filepath;
-  char * filename = (char*)filepath;
-  size_t len = 0;
-
-  if (path == NULL) {
-    filebasename = (char*)malloc(len + 1);
-  } else {
-    filebasename = path;
-  }
-
-  while(*p != '\0') {
+  while (*p != '\0') {
     if (*p == '/' || *p == '\\') {
       filename = p + 1;
     }
@@ -281,12 +294,34 @@ char * basename(const char* filepath, char* path) {
       break;
     }
     len++;
+    p++;
   }
 
-  memcpy(filename, &filebasename, len);
+  filebasename = (char *)malloc(len + 1);
+  memcpy(filebasename, filename, len);
   filebasename[len + 1] = '\0';
 
   return filebasename;
+}
+
+char *read16to8(char16_t *str16) {
+  char *char8str;
+  unsigned long len = 0;
+  uint16_t letter;
+
+  while (str16[len] != 0) {
+    len++;
+  }
+
+  char8str = (char *)malloc(len + 1);
+
+  for (unsigned long i = 0; i <= len; i++) {
+    letter = (uint16_t)str16[i];
+    char8str[i] = (char)letter;
+  }
+  // char8str[len + 1] = '\0';
+
+  return char8str;
 }
 
 // # vim: ts=2 sw=2 expandtab

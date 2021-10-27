@@ -87,7 +87,7 @@ enum HIRC_OBJECT {
   HIRC_AUXILIARY_BUS = 20
 };
 
-void read_hirc(void *data);
+void read_hirc(void *data, char *path);
 #endif
 
 // # vim: ts=2 sw=2 expandtab
