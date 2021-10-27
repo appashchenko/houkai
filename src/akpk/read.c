@@ -1,6 +1,6 @@
 #include <linux/limits.h>
-#include <stddef.h>
 #include <stdint.h>
+#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
 #define _GNU_SOURCE
@@ -102,9 +102,6 @@ void akpk_open(const char *filepath) {
 
       for (uint32_t i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
-        char *test = (char *)((uintptr_t)header_data_ptr + lang_map[i].offset);
-        char *test2 =
-            (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset);
         languages[i].name = read16to8(
             (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset));
 

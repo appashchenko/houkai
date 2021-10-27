@@ -42,7 +42,7 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
   free(fullpath);
 }
 
-int wem2wav(void *data) {
+/*int wem2wav(void *data) {
   uint32_t size;
   uint32_t chunk;
   uint32_t fmt_size;
@@ -77,7 +77,7 @@ int wem2wav(void *data) {
   // int out = open(filename, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR);
 
   return 0;
-}
+}*/
 #endif
 
 // # vim: ts=2 sw=2 expandtab
