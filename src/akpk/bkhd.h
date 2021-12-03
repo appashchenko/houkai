@@ -15,7 +15,7 @@ struct bank_header_t {
 };
 typedef struct bank_header_t bank_header_t;
 
-void read_bkhd(void *data, char *path);
+void read_bkhd(void *data, ssize_t size, char *path);
 #endif
 
 // # vim: ts=2 sw=2 expandtab

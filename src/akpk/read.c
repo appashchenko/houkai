@@ -1,8 +1,8 @@
 #include <linux/limits.h>
 #include <stdint.h>
-#include <sys/types.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/types.h>
 #define _GNU_SOURCE
 #include "akpk.h"
 #include "bkhd.h"
@@ -26,16 +26,16 @@
 
 static int stream_fd = 0;
 static char *get_language_str(lang_list_t languages, uint32_t id);
-static int read_soundbank(uint64_t id, size_t sz, uint32_t len, char *path);
+static int read_soundbank(uint64_t id, ssize_t sz, uint32_t len, char *path);
 static char *basename(const char *filepath);
 static char *read16to8(char16_t *string);
+static void *sbbuf = NULL;
 
 void akpk_open(const char *filepath) {
-  struct stat sb;
+  struct stat sib;
   void *header_data = NULL;
   void *header_data_ptr = NULL;
   akpk_header_t header;
-  uint8_t *filedata = NULL;
   char *base = NULL;
   lang_list_t languages = NULL;
   char *path = NULL;
@@ -46,7 +46,7 @@ void akpk_open(const char *filepath) {
     goto clean;
   }
 
-  if (fstat(stream_fd, &sb) == -1) {
+  if (fstat(stream_fd, &sib) == -1) {
     perror("Failed to get file info");
     goto clean;
   }
@@ -68,6 +68,13 @@ void akpk_open(const char *filepath) {
   }
 
   base = basename(filepath);
+
+  if (base == NULL) {
+    fprintf(stderr, "Could not allocate memory for basename: %s\n",
+            strerror(errno));
+    goto clean;
+  }
+
   int ret =
       mkdir(base, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
   if (ret != 0 && errno != EEXIST) {
@@ -83,6 +90,12 @@ void akpk_open(const char *filepath) {
     uint32_t size = header.lang_map_size + header.sb_lut_size +
                     header.stm_lut_size + header.ext_lut_size;
     header_data = malloc(size);
+    if (header_data == NULL) {
+      fprintf(stderr, "Could not allocate memory PCK header: %s\n",
+              strerror(errno));
+      goto clean;
+    }
+
     header_data_ptr = header_data;
 
     if (read(stream_fd, header_data, size) != size) {
@@ -97,6 +110,12 @@ void akpk_open(const char *filepath) {
 
     if (count > 0) {
       languages = (lang_list_t)calloc(count + 1, sizeof(lang_t));
+      if (languages == NULL) {
+        fprintf(stderr, "Could not allocate memory for language map: %s\n",
+                strerror(errno));
+        goto clean;
+      }
+
       lang_entry_t *lang_map =
           (lang_entry_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
@@ -105,9 +124,20 @@ void akpk_open(const char *filepath) {
         languages[i].name = read16to8(
             (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset));
 
+        if (languages[i].name == NULL) {
+          fprintf(stderr, "Could not allocate memory for language: %s\n",
+                  strerror(errno));
+          goto clean;
+        }
+
         unsigned long total_len = base_len + strlen(languages[i].name) + 1 + 1;
 
         path = (char *)malloc(total_len);
+        if (path == NULL) {
+          fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          goto clean;
+        }
+
         snprintf(path, total_len, "%s/%s", base, languages[i].name);
 
         int ret = mkdir(path, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH |
@@ -138,7 +168,12 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = malloc(total_len);
+        path = (char *)malloc(total_len);
+        if (path == NULL) {
+          fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          goto clean;
+        }
+
         snprintf(path, total_len, "%s/%s", base, lang);
 
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
@@ -164,7 +199,12 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = malloc(total_len);
+        path = (char *)malloc(total_len);
+        if (path == NULL) {
+          fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          goto clean;
+        }
+
         snprintf(path, total_len, "%s/%s", base, lang);
 
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
@@ -191,7 +231,12 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = malloc(total_len);
+        path = (char *)malloc(total_len);
+        if (path == NULL) {
+          fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          goto clean;
+        }
+
         snprintf(path, total_len, "%s/%s", base, lang);
 
         if (read_soundbank(sb[i].id, sb[i].block_size * sb[i].file_size,
@@ -205,13 +250,6 @@ void akpk_open(const char *filepath) {
   }
 
 clean:
-  if (filedata) {
-    if (munmap(filedata, (size_t)sb.st_size) == -1) {
-      perror("Failed to unmap file");
-    }
-    free(filedata);
-  }
-
   if (languages) {
     lang_t *lang = languages;
     while (lang->name != NULL) {
@@ -219,6 +257,10 @@ clean:
       lang++;
     }
     free(languages);
+  }
+
+  if (sbbuf) {
+    free(sbbuf);
   }
 
   if (base) {
@@ -232,18 +274,25 @@ clean:
   }
 }
 
-static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
+static int read_soundbank(uint64_t id, ssize_t size, uint32_t offset,
                           char *path) {
-  void *data = malloc(size);
+  sbbuf = realloc(sbbuf, (size_t)size);
 
-  if (pread(stream_fd, data, size, offset) == (ssize_t)size) {
-    uint32_t magic = *((uint32_t *)data);
+  if (sbbuf == NULL) {
+    fprintf(stderr, "Could not allocate memory for soundbank: %s\n",
+            strerror(errno));
+    free(sbbuf);
+    return -1;
+  }
+
+  if (pread(stream_fd, sbbuf, size, offset) == size) {
+    uint32_t magic = *((uint32_t *)sbbuf);
     switch (magic) {
     case BKHD:
-      read_bkhd(data, path);
+      read_bkhd(sbbuf, size, path);
       break;
     case RIFF: {
-      save_wem(data, size, id, path);
+      save_wem(sbbuf, size, id, path);
     } break;
     default:
       fprintf(stderr, "Unknown soundbank container type: %X\n", magic);
@@ -251,7 +300,6 @@ static int read_soundbank(uint64_t id, size_t size, uint32_t offset,
   } else {
     fprintf(stderr, "Failed to read file. Exit.\n");
   }
-  free(data);
 
   return 0;
 }
@@ -295,6 +343,10 @@ char *basename(const char *filepath) {
   }
 
   filebasename = (char *)malloc(len + 1);
+  if (filebasename == NULL) {
+    return NULL;
+  }
+
   memcpy(filebasename, filename, len);
   filebasename[len + 1] = '\0';
 
@@ -311,6 +363,9 @@ char *read16to8(char16_t *str16) {
   }
 
   char8str = (char *)malloc(len + 1);
+  if (char8str == NULL) {
+    return NULL;
+  }
 
   for (unsigned long i = 0; i <= len; i++) {
     letter = (uint16_t)str16[i];

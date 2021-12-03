@@ -1,7 +1,9 @@
 #ifndef DIDX_H
 #define DIDX_H
 
+#include <stddef.h>
 #include <stdint.h>
+#include <unistd.h>
 
 struct didx_header_t {
   uint32_t magic;
@@ -56,7 +58,7 @@ typedef struct didx_header_t didx_header_t;
 typedef struct didx_entry_t didx_entry_t;
 typedef struct didx_data_t didx_data_t;
 
-void read_didx(void *data, char *path);
+int read_didx(void *data, ssize_t size, char *path);
 #endif
 
 // # vim: ts=2 sw=2 expandtab

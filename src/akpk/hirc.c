@@ -1,6 +1,6 @@
 #include "hirc.h"
 
-void read_hirc(void *data, char * path) {
+void read_hirc(void *data, char *path) {
   hirc_header_t *header = (hirc_header_t *)data;
 
   data = (void *)((uintptr_t)data + sizeof(hirc_header_t));

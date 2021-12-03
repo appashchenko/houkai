@@ -81,14 +81,15 @@ use .start_block from sb, stm, externals
 #define DLG_GROUP2_T2 1568083779U
 #define DLG_GROUP2_T3 1568083778U
 
-enum SECTION {
-
+enum SECTIONS {
   AKPK = 0x4B504B41,
   BKHD = 0x44484B42,
   HIRC = 0x43524948,
   DIDX = 0x58444944,
   DATA = 0x41544144,
-  RIFF = 0x46464952
+  RIFF = 0x46464952,
+
+  INIT = 0x54494E49,
 };
 
 struct akpk_header_t {
