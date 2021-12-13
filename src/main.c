@@ -19,5 +19,4 @@ int main(int argc, char *argv[]) {
 }
 
 /* vim: ts=2 sw=2 expandtab
-*/
-
+ */

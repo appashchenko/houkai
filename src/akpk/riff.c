@@ -7,13 +7,12 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <sys/stat.h>
 #include <memory.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
 #include <unistd.h>
-#include <stdio.h>
 
 #define WAVE 0x45564157
 #define FMT0 0x20746D66
@@ -147,4 +146,4 @@ int wem2wav(void *data) {
 #endif
 
 /* vim: ts=2 sw=2 expandtab
-*/
+ */

@@ -138,4 +138,4 @@ void akpk_open(const char *);
 #endif
 
 /* vim: ts=2 sw=2 expandtab
-*/
+ */

@@ -14,7 +14,7 @@ void read_bkhd(void *data, ssize_t size, char *path) {
     /* normally this snould not be happened */
     if (data_offset > size) {
       fprintf(stderr, "BKHD#%X section has wrong size (%lu >= %lu).\n",
-            header->soundbank_id, data_offset, size);
+              header->soundbank_id, data_offset, size);
     }
     return;
   }
@@ -46,4 +46,4 @@ void read_bkhd(void *data, ssize_t size, char *path) {
 }
 
 /* vim: ts=2 sw=2 expandtab
-*/
+ */

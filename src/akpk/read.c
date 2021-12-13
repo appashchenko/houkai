@@ -1,9 +1,4 @@
 #define _DEFAULT_SOURCE
-#include <linux/limits.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/types.h>
 #include "akpk.h"
 #include "bkhd.h"
 #include "didx.h"
@@ -13,15 +8,18 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
+#include <linux/limits.h>
 #include <memory.h>
 #include <semaphore.h>
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <threads.h>
-#include <stdio.h>
 #include <uchar.h>
 #include <unistd.h>
 
@@ -380,4 +378,4 @@ char *read16to8(char16_t *str16) {
 }
 
 /* vim: ts=2 sw=2 expandtab
-*/
+ */
