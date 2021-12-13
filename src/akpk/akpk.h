@@ -137,4 +137,5 @@ typedef lang_t *lang_list_t;
 void akpk_open(const char *);
 #endif
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

@@ -1,9 +1,9 @@
+#define _DEFAULT_SOURCE
 #include <linux/limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#define _GNU_SOURCE
 #include "akpk.h"
 #include "bkhd.h"
 #include "didx.h"
@@ -21,6 +21,7 @@
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <threads.h>
+#include <stdio.h>
 #include <uchar.h>
 #include <unistd.h>
 
@@ -40,6 +41,7 @@ void akpk_open(const char *filepath) {
   lang_list_t languages = NULL;
   char *path = NULL;
   unsigned long base_len;
+  uint32_t i;
 
   if ((stream_fd = open(filepath, O_RDONLY, O_NOFOLLOW)) == 0) {
     fprintf(stderr, "Failed to open file %s. Exit\n", filepath);
@@ -85,7 +87,7 @@ void akpk_open(const char *filepath) {
 
   base_len = strlen(base);
 
-  // Read remaining header data (languages map, soundbanks look-up tables)
+  /* Read remaining header data (languages map, soundbanks look-up tables) */
   {
     uint32_t size = header.lang_map_size + header.sb_lut_size +
                     header.stm_lut_size + header.ext_lut_size;
@@ -104,7 +106,7 @@ void akpk_open(const char *filepath) {
     }
   }
 
-  // Read the languages map
+  /* Read the languages map */
   {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
@@ -119,7 +121,7 @@ void akpk_open(const char *filepath) {
       lang_entry_t *lang_map =
           (lang_entry_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
-      for (uint32_t i = 0; i < count; i++) {
+      for (i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
         languages[i].name = read16to8(
             (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset));
@@ -156,7 +158,7 @@ void akpk_open(const char *filepath) {
         (void *)((uintptr_t)header_data_ptr + header.lang_map_size);
   }
 
-  // Read soundbanks
+  /* Read soundbanks */
   {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
@@ -164,7 +166,7 @@ void akpk_open(const char *filepath) {
       soundbank_entry32_t *sb =
           (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
-      for (uint32_t i = 0; i < count; i++) {
+      for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
@@ -187,7 +189,7 @@ void akpk_open(const char *filepath) {
     header_data_ptr = (void *)((uintptr_t)header_data_ptr + header.sb_lut_size);
   }
 
-  // Read STM soundbanks
+  /* Read STM soundbanks */
   {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
@@ -195,7 +197,7 @@ void akpk_open(const char *filepath) {
       soundbank_entry32_t *sb =
           (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
-      for (uint32_t i = 0; i < count; i++) {
+      for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
@@ -219,7 +221,7 @@ void akpk_open(const char *filepath) {
         (void *)((uintptr_t)header_data_ptr + header.stm_lut_size);
   }
 
-  // Read EXTERNALS
+  /* Read EXTERNALS */
   {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
@@ -227,7 +229,7 @@ void akpk_open(const char *filepath) {
       soundbank_entry64_t *sb =
           (soundbank_entry64_t *)((uintptr_t)header_data_ptr + sizeof(count));
 
-      for (uint32_t i = 0; i < count; i++) {
+      for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
@@ -357,6 +359,7 @@ char *read16to8(char16_t *str16) {
   char *char8str;
   unsigned long len = 0;
   uint16_t letter;
+  unsigned long i;
 
   while (str16[len] != 0) {
     len++;
@@ -367,13 +370,14 @@ char *read16to8(char16_t *str16) {
     return NULL;
   }
 
-  for (unsigned long i = 0; i <= len; i++) {
+  for (i = 0; i <= len; i++) {
     letter = (uint16_t)str16[i];
     char8str[i] = (char)letter;
   }
-  // char8str[len + 1] = '\0';
+  /* char8str[len + 1] = '\0'; */
 
   return char8str;
 }
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

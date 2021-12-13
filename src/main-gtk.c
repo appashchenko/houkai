@@ -171,4 +171,5 @@ static void open_file_dialog_activated(GSimpleAction *action,
                    NULL);
 }
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

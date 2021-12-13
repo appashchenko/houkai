@@ -90,4 +90,5 @@ enum HIRC_OBJECT {
 void read_hirc(void *data, char *path);
 #endif
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

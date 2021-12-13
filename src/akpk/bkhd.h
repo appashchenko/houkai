@@ -3,6 +3,7 @@
 
 #include "akpk.h"
 #include <string.h>
+#include <unistd.h>
 
 struct bank_header_t {
   uint32_t magic;
@@ -18,4 +19,5 @@ typedef struct bank_header_t bank_header_t;
 void read_bkhd(void *data, ssize_t size, char *path);
 #endif
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

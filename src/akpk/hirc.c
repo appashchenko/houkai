@@ -41,3 +41,6 @@ void read_hirc(void *data, char *path) {
     data = (void *)((uintptr_t)data + object->size + sizeof(hirc_object_t));
   }
 }
+
+/* vim: ts=2 sw=2 expandtab
+*/

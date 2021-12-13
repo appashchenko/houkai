@@ -1,4 +1,3 @@
-//#include "hirc.h"
 #include "bkhd.h"
 #include "didx.h"
 
@@ -10,9 +9,9 @@ void read_bkhd(void *data, ssize_t size, char *path) {
 
   ssize_t rem_size = size - data_offset;
 
-  // soundbank can be empty
+  /* soundbank can be empty */
   if (data_offset >= size) {
-    // normally this snould not be happened
+    /* normally this snould not be happened */
     if (data_offset > size) {
       fprintf(stderr, "BKHD#%X section has wrong size (%lu >= %lu).\n",
             header->soundbank_id, data_offset, size);
@@ -29,16 +28,16 @@ void read_bkhd(void *data, ssize_t size, char *path) {
     read_didx(body, rem_size, path);
     break;
   case HIRC:
-    // read_hirc(body, path);
+    /* read_hirc(body, path); */
     break;
   case 0:
-    // empty soundbank. strange thing. ignore
+    /* empty soundbank. strange thing. ignore */
     break;
   case INIT:
-    // wwise init bank. some game parameters here. ignore
+    /* wwise init bank. some game parameters here. ignore */
     break;
   case BKHD:
-    // read_bkhd(body, path);
+    /* read_bkhd(body, path); */
     break;
   default:
     fprintf(stderr, "!!!! Unknown BKHD section %u\n", section_magic);
@@ -46,4 +45,5 @@ void read_bkhd(void *data, ssize_t size, char *path) {
   }
 }
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

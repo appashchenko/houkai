@@ -1,17 +1,19 @@
 #ifndef RIFF_H
 #define RIFF_H
 
+#define _DEFAULT_SOURCE
 #include "riff.h"
 #include "akpk.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
-#include <linux/stat.h>
+#include <sys/stat.h>
 #include <memory.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <stdio.h>
 
 #define WAVE 0x45564157
 #define FMT0 0x20746D66
@@ -80,6 +82,7 @@ struct waveformatextensible {
 enum codec_t { CODEC_NONE, CODEC_PCM, CODEC_WAVE };
 typedef enum codec_t codec_t;
 
+/*
 int wem2wav(void *data) {
   uint32_t size;
   uint32_t chunk;
@@ -140,7 +143,8 @@ int wem2wav(void *data) {
   chunk = *((uint32_t *)data);
 
   return 0;
-}
+}*/
 #endif
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/

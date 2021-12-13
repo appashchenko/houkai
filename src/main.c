@@ -8,7 +8,8 @@
 
 int main(int argc, char *argv[]) {
   if (argc > 1) {
-    for (int i = 1; i < argc; i++) {
+    int i;
+    for (i = 1; i < argc; i++) {
       akpk_open(argv[i]);
     }
   } else {
@@ -17,4 +18,6 @@ int main(int argc, char *argv[]) {
   return 0;
 }
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/
+

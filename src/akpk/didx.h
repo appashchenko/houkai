@@ -22,7 +22,7 @@ struct didx_data_t {
 };
 
 struct wem {
-  uint32_t _riff; // 0x46464952
+  uint32_t _riff;
 };
 
 struct wave_header_broken {
@@ -61,4 +61,5 @@ typedef struct didx_data_t didx_data_t;
 int read_didx(void *data, ssize_t size, char *path);
 #endif
 
-// # vim: ts=2 sw=2 expandtab
+/* vim: ts=2 sw=2 expandtab
+*/
