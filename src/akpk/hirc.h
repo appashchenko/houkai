@@ -36,8 +36,8 @@ struct __attribute__((packed)) hirc_obj_snd {
   uint32_t include;
   uint32_t audio_id;
   uint32_t source_id;
-  // uint32_t offset;
-  // uint32_t size;
+  /*uint32_t offset;*/
+  /*uint32_t size;*/
 };
 
 struct __attribute__((packed)) hirc_obj_mt {

@@ -1,6 +1,7 @@
 #ifndef RIFF_H
 #define RIFF_H
 
+#include <stdbool.h>
 #define _DEFAULT_SOURCE
 #include "riff.h"
 #include "akpk.h"
@@ -25,10 +26,12 @@ enum chunk_type {
   WMA_LIST = 0x5453494C
 };
 
+
 void save_wem(void *data, size_t size, uint64_t id, char *path) {
   char *fullpath = NULL;
   unsigned long len;
   int out;
+  struct stat sib;
 
   len = strlen(path) + (sizeof(id) << 2) + 1 + 1;
 
@@ -41,6 +44,16 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
   }
 
   snprintf(fullpath, len, "%s/%lX.wem", path, id);
+
+
+  if (stat(fullpath, &sib) == 0) {
+    if (sib.st_size == size) {
+      printf("File %s already exists and have same size. Skip.\n", fullpath);
+      return;
+    } else {
+      printf("File %s already exists but have different size. Override.\n", fullpath);
+    }
+  }
 
   out =
       open(fullpath, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);

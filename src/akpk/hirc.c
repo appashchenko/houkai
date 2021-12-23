@@ -5,7 +5,8 @@ void read_hirc(void *data, char *path) {
 
   data = (void *)((uintptr_t)data + sizeof(hirc_header_t));
 
-  for (uint32_t i = 0; i < header->count; i++) {
+  uint32_t i;
+  for (i = 0; i < header->count; i++) {
     hirc_object_t *object = (hirc_object_t *)data;
 
     switch (object->type) {
