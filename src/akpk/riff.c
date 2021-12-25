@@ -15,6 +15,8 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define USERGRPFLAGS S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
+
 #define WAVE 0x45564157
 #define FMT0 0x20746D66
 
@@ -59,8 +61,7 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
     }
   }
 
-  out =
-      open(fullpath, O_CREAT | O_WRONLY, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP);
+  out = open(fullpath, O_CREAT | O_WRONLY, USERGRPFLAGS);
 
   if (out) {
     ssize_t ret = write(out, data, size);

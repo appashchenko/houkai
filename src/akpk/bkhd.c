@@ -38,6 +38,7 @@ void read_bkhd(void *data, ssize_t size, char *path) {
     break;
   case BKHD:
     /* read_bkhd(body, path); */
+    printf("BKHD inside a BKHD#%u. Skip.\n", header->soundbank_id);
     break;
   default:
     fprintf(stderr, "!!!! Unknown BKHD section %u\n", section_magic);
