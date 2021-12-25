@@ -5,7 +5,7 @@
 #include <string.h>
 #include <unistd.h>
 
-struct bank_header_t {
+struct bank_header {
   uint32_t magic;
   uint32_t size;
   uint32_t revision;
@@ -14,7 +14,6 @@ struct bank_header_t {
   uint32_t _reserved;
   uint32_t version;
 };
-typedef struct bank_header_t bank_header_t;
 
 void read_bkhd(void *data, ssize_t size, char *path);
 #endif

@@ -2,11 +2,11 @@
 #include "didx.h"
 
 void read_bkhd(void *data, ssize_t size, char *path) {
-  bank_header_t *header = (bank_header_t *)data;
-
-  size_t data_offset =
+  void *body;
+  struct bank_header *header = (struct bank_header *)data;
+  uint32_t section_magic;
+  const size_t data_offset =
       sizeof(header->magic) + sizeof(header->size) + header->size;
-
   ssize_t rem_size = size - data_offset;
 
   /* soundbank can be empty */
@@ -19,9 +19,9 @@ void read_bkhd(void *data, ssize_t size, char *path) {
     return;
   }
 
-  void *body = (void *)((uintptr_t)data + (uint64_t)data_offset);
+  body = (void *)((uintptr_t)data + (uint64_t)data_offset);
 
-  uint32_t section_magic = *((uint32_t *)body);
+  section_magic = *((uint32_t *)body);
 
   switch (section_magic) {
   case DIDX:

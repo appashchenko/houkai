@@ -4,17 +4,8 @@
 #include <inttypes.h>
 #include <stddef.h>
 
-struct audio_header_t {
-  uint32_t num_samples;
-  uint16_t channels;
-  uint32_t sample_rate;
-  uint32_t bits_per_sample_avg;
-  uint16_t bits_per_sample;
-};
-
-typedef struct riff_header_t riff_header_t;
-
 void save_wem(void *data, size_t size, uint64_t id, char *path);
+void wem_info(void *data);
 /*int wem2wav(void *data);*/
 #endif
 

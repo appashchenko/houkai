@@ -89,10 +89,10 @@ enum SECTIONS {
   DATA = 0x41544144,
   RIFF = 0x46464952,
 
-  INIT = 0x54494E49,
+  INIT = 0x54494E49
 };
 
-struct akpk_header_t {
+struct akpk_header {
   uint32_t magic;
   uint32_t size;
   uint32_t version;
@@ -101,38 +101,32 @@ struct akpk_header_t {
   uint32_t stm_lut_size;
   uint32_t ext_lut_size;
 };
-typedef struct akpk_header_t akpk_header_t;
 
-struct soundbank_entry32_t {
+struct soundbank_entry32 {
   uint32_t id;
   uint32_t block_size;
   uint32_t file_size;
   uint32_t start_block;
   uint32_t language_id;
 };
-typedef struct soundbank_entry32_t soundbank_entry32_t;
 
-struct soundbank_entry64_t {
+struct soundbank_entry64 {
   uint64_t id;
   uint32_t block_size;
   uint32_t file_size;
   uint32_t start_block;
   uint32_t language_id;
 };
-typedef struct soundbank_entry64_t soundbank_entry64_t;
 
-struct lang_entry_t {
+struct lang_entry {
   uint32_t offset;
   uint32_t id;
 };
-typedef struct lang_entry_t lang_entry_t;
 
-struct lang_t {
+struct lang {
   uint32_t id;
   char *name;
 } __attribute__((packed));
-typedef struct lang_t lang_t;
-typedef lang_t *lang_list_t;
 
 void akpk_open(const char *);
 #endif

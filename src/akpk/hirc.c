@@ -1,45 +1,32 @@
 #include "hirc.h"
 
 void read_hirc(void *data, char *path) {
-  hirc_header_t *header = (hirc_header_t *)data;
-
-  data = (void *)((uintptr_t)data + sizeof(hirc_header_t));
-
+  struct hirc_header *header = (struct hirc_header *)data;
   uint32_t i;
+
+  data = (void *)((uintptr_t)data + sizeof(struct hirc_header));
+
   for (i = 0; i < header->count; i++) {
-    hirc_object_t *object = (hirc_object_t *)data;
+    struct hirc_object *object = (struct hirc_object *)data;
 
     switch (object->type) {
     case HIRC_SOUND: {
-      hirc_obj_snd *sound = (hirc_obj_snd *)data;
-
-#ifdef VERBOSE
-      printf(">>>>HIRC-SOUND#%X PARENT#%X\n", sound->audio_id, sound->group_id);
-#endif
+      struct hirc_obj_snd *sound = (struct hirc_obj_snd *)data;
     } break;
     case HIRC_MUSIC_TRACK: {
-      hirc_obj_mt *track = (hirc_obj_mt *)data;
-
-#ifdef VERBOSE
-      printf(">>>>HIRC-MUSICTRCK#%X\n", track->id);
-#endif
+      struct hirc_obj_mt *track = (struct hirc_obj_mt *)data;
     } break;
     case HIRC_MOTION_FX: {
-      hirc_obj_mfx *mfx = (hirc_obj_mfx *)data;
-
-#ifdef VERBOSE
-      printf(">>>>HIRC MFX#%X\n", mfx->id);
-#endif
+      struct hirc_obj_mfx *mfx = (struct hirc_obj_mfx *)data;
     } break;
     default:
-#ifdef VERBOSE
       fprintf(stderr, "HIRC object type %u is not supported yet. Skip\n",
               object->type);
-#endif
       break;
     }
 
-    data = (void *)((uintptr_t)data + object->size + sizeof(hirc_object_t));
+    data =
+        (void *)((uintptr_t)data + object->size + sizeof(struct hirc_object));
   }
 }
 

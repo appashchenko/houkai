@@ -1,7 +1,6 @@
 #ifndef RIFF_H
 #define RIFF_H
 
-#include <stdbool.h>
 #define _DEFAULT_SOURCE
 #include "riff.h"
 #include "akpk.h"
@@ -9,6 +8,7 @@
 #include <fcntl.h>
 #include <limits.h>
 #include <memory.h>
+#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -18,14 +18,18 @@
 #define WAVE 0x45564157
 #define FMT0 0x20746D66
 
-enum chunk_type {
-  WMA_RIFF = 0x46464952,
-  WMA_FMT = 0x666d7420,
-  WMA_WAVE = 0x57415645,
-  WMA_DATA = 0x64617461,
-  WMA_LIST = 0x5453494C
-};
+/* http://soundfile.sapp.org/doc/WaveFormat */
 
+enum chunk_type {
+  /*RIFF_FMT  = 0x666d7420,*/
+  RIFF_FMT = 0x20746d66,
+  RIFF_WAVE = 0x45564157,
+  RIFF_DATA = 0x61746164,
+  RIFF_LIST = 0x5453494C,
+  RIFF_CUE = 0x20657563,
+  RIFF_JUNK = 0x4B4E554A,
+  RIFF_AKD = 0x20646B61 /* some dummy padding. idk */
+};
 
 void save_wem(void *data, size_t size, uint64_t id, char *path) {
   char *fullpath = NULL;
@@ -45,13 +49,13 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
 
   snprintf(fullpath, len, "%s/%lX.wem", path, id);
 
-
   if (stat(fullpath, &sib) == 0) {
     if (sib.st_size == size) {
       printf("File %s already exists and have same size. Skip.\n", fullpath);
       return;
     } else {
-      printf("File %s already exists but have different size. Override.\n", fullpath);
+      printf("File %s already exists but have different size. Override.\n",
+             fullpath);
     }
   }
 
@@ -71,91 +75,128 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
   free(fullpath);
 }
 
-struct waveformatex {
-  uint16_t tag;
-  uint16_t channels;
-  uint32_t samples_per_sec;
-  uint32_t average_bps;
-  uint16_t block_align;
-  uint16_t bps;
-  uint16_t extra_size;
-};
-
-struct waveformatextensible {
-  union {
-    uint16_t valid_bps;
-    uint16_t samples_per_block;
-    uint16_t _reserved;
-  } samples;
-  uint32_t channel_mask;
-  uint64_t subformat;
-};
-
-enum codec_t { CODEC_NONE, CODEC_PCM, CODEC_WAVE };
+enum codec_t { CODEC_PCM, CODEC_WAVE };
 typedef enum codec_t codec_t;
 
-/*
-int wem2wav(void *data) {
+struct riff_chunk {
+  uint32_t chunk_id;
   uint32_t size;
-  uint32_t chunk;
+  uint32_t type;
+};
 
-  void *fmt;
-  uint32_t fmt_size;
-  codec_t codec = CODEC_NONE;
-  uint16_t format;
+struct fmt_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+  uint16_t format_tag;
   uint16_t channels;
   uint32_t sample_rate;
-  uint32_t average_bps;
-  uint16_t block_align;
-  uint16_t bps;
-  uint16_t extra_size;
+  uint32_t avg_byte_rate;
+  uint16_t block_size;
+  uint16_t bits_per_sample;
+};
 
-  off_t offset = 0;
+struct fmt_extra_chunk {
+  uint32_t extra_size;
+  union {
+    uint16_t valid_bits_per_sample;
+    uint16_t samples_per_block;
+    uint16_t _reserved;
+  } channel_layout;
+  uint32_t channel_mask;
+  struct {
+    uint32_t data1;
+    uint16_t data2;
+    uint16_t data3;
+    uint32_t data4;
+    uint32_t data5;
+  } guid;
+};
 
-  void *p = data;
+struct data_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+};
 
-  if (*((uint32_t *)data) != RIFF) {
+struct cue_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+  uint32_t points;
+};
+
+struct cue_point {
+  uint32_t chunk_id;
+  uint32_t position;
+  uint32_t fcc_chunk;
+  uint32_t chunk_start;
+  uint32_t block_start;
+  uint32_t offset;
+};
+
+struct list_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+  uint32_t adtl;
+};
+
+struct labl {
+  uint32_t chunk_id;
+  uint32_t size;
+  uint32_t cue_point_id;
+};
+
+struct junk_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+  /* uint8_t data[size]*/
+};
+
+void wem_info(void *data) {
+  uint32_t chunk;
+  struct riff_chunk *riff;
+  void *pos = data;
+
+  riff = (struct riff_chunk *)pos;
+
+  if (riff->chunk_id != RIFF) {
     printf("Error while reading WEM: RIFF expected.\n");
-    return -1;
+    return;
   }
 
-  p = (void *)((uintptr_t)p + 4);
-  size = *((uint32_t *)p);
+  pos = (void *)((uintptr_t)pos + sizeof(*riff));
 
-  while (offset < size) {
-    p = (void *)((uintptr_t)p + offset);
-
-    chunk = *(uint32_t *)p;
+  while (pos < (void *)((uintptr_t)data + riff->size)) {
+    chunk = *(uint32_t *)pos;
 
     switch (chunk) {
-    case WMA_WAVE:
-      codec = CODEC_WAVE;
-      offset += 4;
-      break;
-    case WMA_FMT:
-      fmt = p;
-      fmt_size = *(uint32_t *)((uintptr_t)p + 4);
-      format = *(uint16_t *)((uintptr_t)p + 8);
-      channels = *(uint16_t *)((uintptr_t)p + 10);
-      sample_rate = *(uint32_t *)((uintptr_t)p + 12);
-      average_bps = *(uint32_t *)((uintptr_t)p + 16);
-      block_align = *(uint16_t *)((uintptr_t)p + 20);
-      bps = *(uint16_t *)((uintptr_t)p + 22);
-      extra_size = *(uint16_t *)((uintptr_t)p + 24);
-
-      offset += fmt_size;
-      break;
+    case RIFF_FMT: {
+      struct fmt_chunk *fmt = (struct fmt_chunk *)pos;
+      pos = (void *)((uintptr_t)pos + fmt->size + 4 + 4);
+    } break;
+    case RIFF_DATA: {
+      struct data_chunk *data = (struct data_chunk *)pos;
+      pos = (void *)((uintptr_t)pos + 4 + 4 + data->size);
+    } break;
+    case RIFF_CUE: {
+      struct cue_chunk *cue = (struct cue_chunk *)pos;
+      pos = (void *)((uintptr_t)pos + 4 + 4 + cue->size);
+      /* cue points wanna see? */
+    } break;
+    case RIFF_LIST: {
+      struct list_chunk *list = (struct list_chunk *)pos;
+      pos = (void *)((uintptr_t)pos + 4 + 4 + list->size);
+    } break;
+    case RIFF_AKD:
+    case RIFF_JUNK: {
+      struct junk_chunk *junk = (struct junk_chunk *)pos;
+      pos = (void *)((uintptr_t)pos + 4 + 4 + junk->size);
+    } break;
     default:
-      offset += 4;
+      printf("Unknown chunk: %X\n", chunk);
+      pos = (void *)((uintptr_t)pos + 4);
       break;
     }
   }
-
-  data = (void *)((uintptr_t)data + 4);
-  chunk = *((uint32_t *)data);
-
-  return 0;
-}*/
+}
 #endif
 
 /* vim: ts=2 sw=2 expandtab

@@ -24,7 +24,7 @@
 #include <unistd.h>
 
 static int stream_fd = 0;
-static char *get_language_str(lang_list_t languages, uint32_t id);
+static char *get_language_str(struct lang *languages, uint32_t id);
 static int read_soundbank(uint64_t id, ssize_t sz, uint32_t len, char *path);
 static char *basename(const char *filepath);
 static char *read16to8(char16_t *string);
@@ -34,12 +34,13 @@ void akpk_open(const char *filepath) {
   struct stat sib;
   void *header_data = NULL;
   void *header_data_ptr = NULL;
-  akpk_header_t header;
+  struct akpk_header header;
   char *base = NULL;
-  lang_list_t languages = NULL;
+  struct lang *languages = NULL;
   char *path = NULL;
   unsigned long base_len;
   uint32_t i;
+  int ret;
 
   if ((stream_fd = open(filepath, O_RDONLY, O_NOFOLLOW)) == 0) {
     fprintf(stderr, "Failed to open file %s. Exit\n", filepath);
@@ -75,8 +76,7 @@ void akpk_open(const char *filepath) {
     goto clean;
   }
 
-  int ret =
-      mkdir(base, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
+  ret = mkdir(base, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
   if (ret != 0 && errno != EEXIST) {
     char *error = strerror(ret);
     fprintf(stderr, "Failed to create directory %s\n%s\n", base, error);
@@ -106,18 +106,20 @@ void akpk_open(const char *filepath) {
 
   /* Read the languages map */
   {
+    struct lang_entry *lang_map;
     uint32_t count = *((uint32_t *)header_data_ptr);
+    unsigned long total_len;
 
     if (count > 0) {
-      languages = (lang_list_t)calloc(count + 1, sizeof(lang_t));
+      languages = (struct lang *)calloc(count + 1, sizeof(struct lang));
       if (languages == NULL) {
         fprintf(stderr, "Could not allocate memory for language map: %s\n",
                 strerror(errno));
         goto clean;
       }
 
-      lang_entry_t *lang_map =
-          (lang_entry_t *)((uintptr_t)header_data_ptr + sizeof(count));
+      lang_map =
+          (struct lang_entry *)((uintptr_t)header_data_ptr + sizeof(count));
 
       for (i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
@@ -130,7 +132,7 @@ void akpk_open(const char *filepath) {
           goto clean;
         }
 
-        unsigned long total_len = base_len + strlen(languages[i].name) + 1 + 1;
+        total_len = base_len + strlen(languages[i].name) + 1 + 1;
 
         path = (char *)malloc(total_len);
         if (path == NULL) {
@@ -140,8 +142,8 @@ void akpk_open(const char *filepath) {
 
         snprintf(path, total_len, "%s/%s", base, languages[i].name);
 
-        int ret = mkdir(path, S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH |
-                                  S_IROTH);
+        ret = mkdir(path,
+                    S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
         if (ret != 0 && errno != EEXIST) {
           char *error = strerror(ret);
           fprintf(stderr, "Failed to create directory %s\n%s\n", path, error);
@@ -161,8 +163,9 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry32_t *sb =
-          (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
+      struct soundbank_entry32 *sb =
+          (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
+                                       sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
@@ -192,8 +195,9 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry32_t *sb =
-          (soundbank_entry32_t *)((uintptr_t)header_data_ptr + sizeof(count));
+      struct soundbank_entry32 *sb =
+          (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
+                                       sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
@@ -224,8 +228,9 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
-      soundbank_entry64_t *sb =
-          (soundbank_entry64_t *)((uintptr_t)header_data_ptr + sizeof(count));
+      struct soundbank_entry64 *sb =
+          (struct soundbank_entry64 *)((uintptr_t)header_data_ptr +
+                                       sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
@@ -251,7 +256,7 @@ void akpk_open(const char *filepath) {
 
 clean:
   if (languages) {
-    lang_t *lang = languages;
+    struct lang *lang = languages;
     while (lang->name != NULL) {
       free(lang->name);
       lang++;
@@ -292,6 +297,7 @@ static int read_soundbank(uint64_t id, ssize_t size, uint32_t offset,
       read_bkhd(sbbuf, size, path);
       break;
     case RIFF: {
+      wem_info(sbbuf);
       save_wem(sbbuf, size, id, path);
     } break;
     default:
@@ -304,11 +310,11 @@ static int read_soundbank(uint64_t id, ssize_t size, uint32_t offset,
   return 0;
 }
 
-char *get_language_str(lang_list_t languages, uint32_t id) {
+char *get_language_str(struct lang *languages, uint32_t id) {
   static char *none = "";
   char *ret = none;
 
-  lang_list_t p = languages;
+  struct lang *p = languages;
   while (p->name != NULL) {
     if (p->id == id) {
       ret = p->name;

@@ -4,14 +4,13 @@
 #ifndef HIRC_H
 #define HIRC_H
 
-struct __attribute__((packed)) hirc_header_t {
+struct __attribute__((packed)) hirc_header {
   uint32_t magic;
   uint32_t size;
   uint32_t count;
 };
-typedef struct hirc_header_t hirc_header_t;
 
-struct __attribute__((packed)) hirc_object_t {
+struct __attribute__((packed)) hirc_object {
   uint8_t type;
   uint32_t size;
 };
@@ -59,11 +58,6 @@ struct __attribute__((packed)) hirc_obj_mfx {
   uint32_t group2;
   uint32_t group3;
 };
-
-typedef struct hirc_object_t hirc_object_t;
-typedef struct hirc_obj_mt hirc_obj_mt;
-typedef struct hirc_obj_snd hirc_obj_snd;
-typedef struct hirc_obj_mfx hirc_obj_mfx;
 
 enum HIRC_OBJECT {
   HIRC_SETTINGS = 1,
