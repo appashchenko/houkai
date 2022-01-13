@@ -30,34 +30,28 @@ enum chunk_type {
   RIFF_LIST = 0x5453494C,
   RIFF_CUE = 0x20657563,
   RIFF_JUNK = 0x4B4E554A,
-  RIFF_AKD = 0x20646B61 /* some dummy padding. idk */
+  RIFF_AKD = 0x20646B61, /* some dummy padding. idk */
+  RIFF_LPMS = 0x6C706D73,
 };
 
 void save_wem(void *data, size_t size, uint64_t id, char *path) {
-  char *fullpath = NULL;
+  char fullpath[PATH_MAX];
   unsigned long len;
   int out;
   struct stat sib;
 
-  len = strlen(path) + (sizeof(id) << 2) + 1 + 1;
+  /* separator/id/.wem/terminator */
+  len = strlen(path) + 1 + 16 + 4 + 1;
 
-  fullpath = (char *)malloc(len);
-
-  if (fullpath == NULL) {
-    fprintf(stderr, "Could not allocate memory for full file path: %s\n",
-            strerror(errno));
-    return;
-  }
-
-  snprintf(fullpath, len, "%s/%lX.wem", path, id);
+  snprintf(fullpath, len, "%s/%08lX.wem", path, id);
 
   if (stat(fullpath, &sib) == 0) {
-    if (sib.st_size == size) {
-      printf("File %s already exists and have same size. Skip.\n", fullpath);
-      return;
+    if (sib.st_size != size) {
+       printf("File %s already exists but have different size.\n", fullpath);
+       snprintf(fullpath, len+1, "%s/%08lX-.wem", path, id);
+       printf("Save as %s.\n", fullpath);
     } else {
-      printf("File %s already exists but have different size. Override.\n",
-             fullpath);
+      return;
     }
   }
 
@@ -72,8 +66,6 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
     }
     close(out);
   }
-
-  free(fullpath);
 }
 
 enum codec_t { CODEC_PCM, CODEC_WAVE };
@@ -151,6 +143,18 @@ struct junk_chunk {
   /* uint8_t data[size]*/
 };
 
+struct lpms_chunk {
+  uint32_t chunk_id;
+  uint32_t size;
+  uint32_t manufacturer;
+  uint32_t product;
+  uint32_t sample_period;
+  uint32_t midi_unity_note;
+  uint32_t midi_pitch_fraction;
+  uint32_t smpte_format;
+  uint32_t smpte_offset;
+};
+
 void wem_info(void *data) {
   uint32_t chunk;
   struct riff_chunk *riff;
@@ -190,6 +194,10 @@ void wem_info(void *data) {
     case RIFF_JUNK: {
       struct junk_chunk *junk = (struct junk_chunk *)pos;
       pos = (void *)((uintptr_t)pos + 4 + 4 + junk->size);
+    } break;
+    case RIFF_LPMS: {
+      struct lpms_chunk *lpms = (struct lpms_chunk*)pos;
+      pos = (void *)((uintptr_t)pos + 4 + 4 + lpms->size);
     } break;
     default:
       printf("Unknown chunk: %X\n", chunk);
