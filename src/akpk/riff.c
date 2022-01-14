@@ -47,9 +47,9 @@ void save_wem(void *data, size_t size, uint64_t id, char *path) {
 
   if (stat(fullpath, &sib) == 0) {
     if (sib.st_size != size) {
-       printf("File %s already exists but have different size.\n", fullpath);
-       snprintf(fullpath, len+1, "%s/%08lX-.wem", path, id);
-       printf("Save as %s.\n", fullpath);
+      printf("File %s already exists but have different size.\n", fullpath);
+      snprintf(fullpath, len + 1, "%s/%08lX-.wem", path, id);
+      printf("Save as %s.\n", fullpath);
     } else {
       return;
     }
@@ -196,7 +196,7 @@ void wem_info(void *data) {
       pos = (void *)((uintptr_t)pos + 4 + 4 + junk->size);
     } break;
     case RIFF_LPMS: {
-      struct lpms_chunk *lpms = (struct lpms_chunk*)pos;
+      struct lpms_chunk *lpms = (struct lpms_chunk *)pos;
       pos = (void *)((uintptr_t)pos + 4 + 4 + lpms->size);
     } break;
     default:

@@ -37,7 +37,6 @@ void akpk_open(const char *filepath) {
   struct akpk_header header;
   char *base = NULL;
   struct lang *languages = NULL;
-  char *path = NULL;
   unsigned long base_len;
   uint32_t i;
   int ret;
@@ -49,6 +48,11 @@ void akpk_open(const char *filepath) {
 
   if (fstat(stream_fd, &sib) == -1) {
     perror("Failed to get file info");
+    goto clean;
+  }
+
+  if (S_ISREG(sib.st_mode) != 1) {
+    fprintf(stderr, "%s is not a regular file. Exit\n", filepath);
     goto clean;
   }
 
@@ -106,11 +110,14 @@ void akpk_open(const char *filepath) {
 
   /* Read the languages map */
   {
-    struct lang_entry *lang_map;
     uint32_t count = *((uint32_t *)header_data_ptr);
-    unsigned long total_len;
 
     if (count > 0) {
+      struct lang_entry *lang_map;
+      unsigned long total_len;
+      char *path = NULL;
+      char *tmp = NULL;
+
       languages = (struct lang *)calloc(count + 1, sizeof(struct lang));
       if (languages == NULL) {
         fprintf(stderr, "Could not allocate memory for language map: %s\n",
@@ -132,12 +139,17 @@ void akpk_open(const char *filepath) {
           goto clean;
         }
 
-        total_len = base_len + strlen(languages[i].name) + 1 + 1;
+        total_len = base_len + 1 + strlen(languages[i].name) + 1;
 
-        path = (char *)malloc(total_len);
-        if (path == NULL) {
+        tmp = (char *)realloc(path, total_len);
+        if (tmp == NULL) {
           fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          if (path != NULL) {
+            free(path);
+          }
           goto clean;
+        } else {
+          path = tmp;
         }
 
         snprintf(path, total_len, "%s/%s", base, languages[i].name);
@@ -146,13 +158,14 @@ void akpk_open(const char *filepath) {
                     S_IFDIR | S_IRWXU | S_IRGRP | S_IXGRP | S_IXOTH | S_IROTH);
         if (ret != 0 && errno != EEXIST) {
           char *error = strerror(ret);
-          fprintf(stderr, "Failed to create directory %s\n%s\n", path, error);
+          fprintf(stderr, "Failed to create directory %s: %s\n", path, error);
+          free(path);
           goto clean;
         }
-        free(path);
       }
       languages[count].id = 0;
       languages[count].name = NULL;
+      free(path);
     }
     header_data_ptr =
         (void *)((uintptr_t)header_data_ptr + header.lang_map_size);
@@ -163,6 +176,8 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
+      char *path = NULL;
+      char *tmp = NULL;
       struct soundbank_entry32 *sb =
           (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
                                        sizeof(count));
@@ -171,10 +186,15 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = (char *)malloc(total_len);
-        if (path == NULL) {
+        tmp = (char *)realloc(path, total_len);
+        if (tmp == NULL) {
           fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          if (path != NULL) {
+            free(path);
+          }
           goto clean;
+        } else {
+          path = tmp;
         }
 
         snprintf(path, total_len, "%s/%s", base, lang);
@@ -184,8 +204,8 @@ void akpk_open(const char *filepath) {
           free(path);
           goto clean;
         }
-        free(path);
       }
+      free(path);
     }
     header_data_ptr = (void *)((uintptr_t)header_data_ptr + header.sb_lut_size);
   }
@@ -195,6 +215,8 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
+      char *path = NULL;
+      char *tmp = NULL;
       struct soundbank_entry32 *sb =
           (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
                                        sizeof(count));
@@ -203,10 +225,15 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = (char *)malloc(total_len);
-        if (path == NULL) {
+        tmp = (char *)realloc(path, total_len);
+        if (tmp == NULL) {
           fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          if (path != NULL) {
+            free(path);
+          }
           goto clean;
+        } else {
+          path = tmp;
         }
 
         snprintf(path, total_len, "%s/%s", base, lang);
@@ -216,8 +243,8 @@ void akpk_open(const char *filepath) {
           free(path);
           goto clean;
         }
-        free(path);
       }
+      free(path);
     }
     header_data_ptr =
         (void *)((uintptr_t)header_data_ptr + header.stm_lut_size);
@@ -228,6 +255,8 @@ void akpk_open(const char *filepath) {
     uint32_t count = *((uint32_t *)header_data_ptr);
 
     if (count > 0) {
+      char *path = NULL;
+      char *tmp = NULL;
       struct soundbank_entry64 *sb =
           (struct soundbank_entry64 *)((uintptr_t)header_data_ptr +
                                        sizeof(count));
@@ -236,10 +265,15 @@ void akpk_open(const char *filepath) {
         char *lang = get_language_str(languages, sb[i].language_id);
         unsigned long total_len = base_len + strlen(lang) + 1 + 1;
 
-        path = (char *)malloc(total_len);
-        if (path == NULL) {
+        tmp = (char *)realloc(path, total_len);
+        if (tmp == NULL) {
           fprintf(stderr, "Could not allocate memory: %s\n", strerror(errno));
+          if (path != NULL) {
+            free(path);
+          }
           goto clean;
+        } else {
+          path = tmp;
         }
 
         snprintf(path, total_len, "%s/%s", base, lang);
@@ -249,8 +283,8 @@ void akpk_open(const char *filepath) {
           free(path);
           goto clean;
         }
-        free(path);
       }
+      free(path);
     }
   }
 
@@ -354,7 +388,7 @@ char *basename(const char *filepath) {
   }
 
   memcpy(filebasename, filename, len);
-  filebasename[len + 1] = '\0';
+  filebasename[len] = '\0';
 
   return filebasename;
 }
