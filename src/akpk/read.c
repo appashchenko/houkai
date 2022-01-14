@@ -396,7 +396,6 @@ char *basename(const char *filepath) {
 char *read16to8(char16_t *str16) {
   char *char8str;
   unsigned long len = 0;
-  uint16_t letter;
   unsigned long i;
 
   while (str16[len] != 0) {
@@ -409,10 +408,9 @@ char *read16to8(char16_t *str16) {
   }
 
   for (i = 0; i <= len; i++) {
-    letter = (uint16_t)str16[i];
-    char8str[i] = (char)letter;
+    char8str[i] = (char)str16[i];
   }
-  /* char8str[len + 1] = '\0'; */
+  /* char8str[len] = '\0'; */
 
   return char8str;
 }
