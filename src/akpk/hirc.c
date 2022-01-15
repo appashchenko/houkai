@@ -1,10 +1,11 @@
 #include "hirc.h"
+#include "util.h"
 
 void read_hirc(void *data, char *path) {
   struct hirc_header *header = (struct hirc_header *)data;
   uint32_t i;
 
-  data = (void *)((uintptr_t)data + sizeof(struct hirc_header));
+  data = move_ptr(data, sizeof(struct hirc_header));
 
   for (i = 0; i < header->count; i++) {
     struct hirc_object *object = (struct hirc_object *)data;
@@ -25,8 +26,7 @@ void read_hirc(void *data, char *path) {
       break;
     }
 
-    data =
-        (void *)((uintptr_t)data + object->size + sizeof(struct hirc_object));
+    data = move_ptr(data, object->size + sizeof(struct hirc_object));
   }
 }
 

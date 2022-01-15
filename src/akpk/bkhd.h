@@ -18,5 +18,4 @@ struct bank_header {
 void read_bkhd(void *data, ssize_t size, char *path);
 #endif
 
-/* vim: ts=2 sw=2 expandtab
- */
+// vim: ts=2 sw=2 expandtab

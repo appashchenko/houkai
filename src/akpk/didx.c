@@ -3,6 +3,7 @@
 #include "riff.h"
 #include <limits.h>
 #include <stdio.h>
+#include "util.h"
 
 extern char *sbdir;
 extern struct lang *languages;
@@ -22,9 +23,9 @@ int read_didx(void *data, ssize_t size, char *path) {
     goto fail;
   }
 
-  entry = (struct didx_entry *)((uintptr_t)data + sizeof(*header));
-  data_header = (struct didx_entry *)((uintptr_t)entry + header->enties_size);
-  data_start = (void *)((uintptr_t)data_header + sizeof(struct didx_data));
+  entry = move_ptr(data , sizeof(*header));
+  data_header = move_ptr(entry, header->enties_size);
+  data_start = move_ptr(data_header, sizeof(struct didx_data));
 
   for (; entry < data_header; entry++) {
     rem_size = rem_size - entry->size;
@@ -33,7 +34,7 @@ int read_didx(void *data, ssize_t size, char *path) {
       goto fail;
     }
 
-    wem = (void *)((uintptr_t)data_start + entry->data_offset);
+    wem = move_ptr(data_start , entry->data_offset);
     wem_info(wem);
     save_wem(wem, entry->size, entry->wem_id, path);
   }
@@ -44,5 +45,4 @@ fail:
   return -1;
 }
 
-/* vim: ts=2 sw=2 expandtab
- */
+// vim: ts=2 sw=2 expandtab

@@ -14,6 +14,7 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include "util.h"
 
 #define USERGRPFLAGS S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
 
@@ -175,38 +176,37 @@ void wem_info(void *data) {
     switch (chunk) {
     case RIFF_FMT: {
       struct fmt_chunk *fmt = (struct fmt_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + fmt->size + 4 + 4);
+      pos = move_ptr(pos, fmt->size + 4 + 4);
     } break;
     case RIFF_DATA: {
       struct data_chunk *data = (struct data_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + 4 + 4 + data->size);
+      pos = move_ptr(pos, 4 + 4 + data->size);
     } break;
     case RIFF_CUE: {
       struct cue_chunk *cue = (struct cue_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + 4 + 4 + cue->size);
+      pos = move_ptr(pos, 4 + 4 + cue->size);
       /* cue points wanna see? */
     } break;
     case RIFF_LIST: {
       struct list_chunk *list = (struct list_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + 4 + 4 + list->size);
+      pos = move_ptr(pos, 4 + 4 + list->size);
     } break;
     case RIFF_AKD:
     case RIFF_JUNK: {
       struct junk_chunk *junk = (struct junk_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + 4 + 4 + junk->size);
+      pos = move_ptr(pos, 4 + 4 + junk->size);
     } break;
     case RIFF_LPMS: {
       struct lpms_chunk *lpms = (struct lpms_chunk *)pos;
-      pos = (void *)((uintptr_t)pos + 4 + 4 + lpms->size);
+      pos = move_ptr(pos, 4 + 4 + lpms->size);
     } break;
     default:
       printf("Unknown chunk: %X\n", chunk);
-      pos = (void *)((uintptr_t)pos + 4);
+      pos = move_ptr(pos, 4);
       break;
     }
   }
 }
 #endif
 
-/* vim: ts=2 sw=2 expandtab
- */
+// vim: ts=2 sw=2 expandtab

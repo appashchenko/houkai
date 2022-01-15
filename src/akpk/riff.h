@@ -9,5 +9,4 @@ void wem_info(void *data);
 /*int wem2wav(void *data);*/
 #endif
 
-/* vim: ts=2 sw=2 expandtab
- */
+// vim: ts=2 sw=2 expandtab

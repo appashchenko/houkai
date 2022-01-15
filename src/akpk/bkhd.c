@@ -1,5 +1,6 @@
 #include "bkhd.h"
 #include "didx.h"
+#include "util.h"
 
 void read_bkhd(void *data, ssize_t size, char *path) {
   void *body;
@@ -19,8 +20,7 @@ void read_bkhd(void *data, ssize_t size, char *path) {
     return;
   }
 
-  body = (void *)((uintptr_t)data + (uint64_t)data_offset);
-
+  body = move_ptr(data, data_offset);
   section_magic = *((uint32_t *)body);
 
   switch (section_magic) {
@@ -46,5 +46,4 @@ void read_bkhd(void *data, ssize_t size, char *path) {
   }
 }
 
-/* vim: ts=2 sw=2 expandtab
- */
+// vim: ts=2 sw=2 expandtab

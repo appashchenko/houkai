@@ -3,6 +3,7 @@
 #include "bkhd.h"
 #include "didx.h"
 #include "riff.h"
+#include "util.h"
 #include "sys/sysinfo.h"
 #include <assert.h>
 #include <errno.h>
@@ -125,13 +126,12 @@ void akpk_open(const char *filepath) {
         goto clean;
       }
 
-      lang_map =
-          (struct lang_entry *)((uintptr_t)header_data_ptr + sizeof(count));
+      lang_map = move_ptr(header_data_ptr, sizeof(count));
 
       for (i = 0; i < count; i++) {
         languages[i].id = lang_map[i].id;
         languages[i].name = read16to8(
-            (char16_t *)((uintptr_t)header_data_ptr + lang_map[i].offset));
+            (char16_t *)(move_ptr(header_data_ptr, lang_map[i].offset)));
 
         if (languages[i].name == NULL) {
           fprintf(stderr, "Could not allocate memory for language: %s\n",
@@ -167,8 +167,7 @@ void akpk_open(const char *filepath) {
       languages[count].name = NULL;
       free(path);
     }
-    header_data_ptr =
-        (void *)((uintptr_t)header_data_ptr + header.lang_map_size);
+    header_data_ptr = move_ptr(header_data_ptr, header.lang_map_size);
   }
 
   /* Read soundbanks */
@@ -178,9 +177,7 @@ void akpk_open(const char *filepath) {
     if (count > 0) {
       char *path = NULL;
       char *tmp = NULL;
-      struct soundbank_entry32 *sb =
-          (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
-                                       sizeof(count));
+      struct soundbank_entry32 *sb = move_ptr(header_data_ptr, sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
@@ -207,7 +204,7 @@ void akpk_open(const char *filepath) {
       }
       free(path);
     }
-    header_data_ptr = (void *)((uintptr_t)header_data_ptr + header.sb_lut_size);
+    header_data_ptr = move_ptr(header_data_ptr, header.sb_lut_size);
   }
 
   /* Read STM soundbanks */
@@ -217,9 +214,7 @@ void akpk_open(const char *filepath) {
     if (count > 0) {
       char *path = NULL;
       char *tmp = NULL;
-      struct soundbank_entry32 *sb =
-          (struct soundbank_entry32 *)((uintptr_t)header_data_ptr +
-                                       sizeof(count));
+      struct soundbank_entry32 *sb = move_ptr(header_data_ptr, sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
@@ -246,8 +241,7 @@ void akpk_open(const char *filepath) {
       }
       free(path);
     }
-    header_data_ptr =
-        (void *)((uintptr_t)header_data_ptr + header.stm_lut_size);
+    header_data_ptr = move_ptr(header_data_ptr, header.stm_lut_size);
   }
 
   /* Read EXTERNALS */
@@ -257,9 +251,7 @@ void akpk_open(const char *filepath) {
     if (count > 0) {
       char *path = NULL;
       char *tmp = NULL;
-      struct soundbank_entry64 *sb =
-          (struct soundbank_entry64 *)((uintptr_t)header_data_ptr +
-                                       sizeof(count));
+      struct soundbank_entry64 *sb = move_ptr(header_data_ptr, sizeof(count));
 
       for (i = 0; i < count; i++) {
         char *lang = get_language_str(languages, sb[i].language_id);
