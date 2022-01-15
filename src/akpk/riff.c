@@ -4,6 +4,7 @@
 #define _DEFAULT_SOURCE
 #include "riff.h"
 #include "akpk.h"
+#include "util.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -14,7 +15,6 @@
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
-#include "util.h"
 
 #define USERGRPFLAGS S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP
 

@@ -1,9 +1,9 @@
 #include "didx.h"
 #include "akpk.h"
 #include "riff.h"
+#include "util.h"
 #include <limits.h>
 #include <stdio.h>
-#include "util.h"
 
 extern char *sbdir;
 extern struct lang *languages;
@@ -23,7 +23,7 @@ int read_didx(void *data, ssize_t size, char *path) {
     goto fail;
   }
 
-  entry = move_ptr(data , sizeof(*header));
+  entry = move_ptr(data, sizeof(*header));
   data_header = move_ptr(entry, header->enties_size);
   data_start = move_ptr(data_header, sizeof(struct didx_data));
 
@@ -34,7 +34,7 @@ int read_didx(void *data, ssize_t size, char *path) {
       goto fail;
     }
 
-    wem = move_ptr(data_start , entry->data_offset);
+    wem = move_ptr(data_start, entry->data_offset);
     wem_info(wem);
     save_wem(wem, entry->size, entry->wem_id, path);
   }
